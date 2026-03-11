@@ -1,8 +1,4 @@
-# ==========================================
-# Nusantara Ekspor - Docker Compose
-# ==========================================
-# Adaptasi dari E-MAS-KAPOR docker setup
-# Stack: FastAPI (Python) + React/Vite + Nginx + SQLite
+
 
 services:
   app:
