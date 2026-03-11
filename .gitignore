@@ -1,0 +1,35 @@
+# ==========================================
+# Nusantara Ekspor - Git Ignore
+# ==========================================
+
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+*.pyo
+
+# Database
+backend/*.db
+
+# Environment
+backend/.env
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
