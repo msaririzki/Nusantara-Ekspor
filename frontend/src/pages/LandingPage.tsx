@@ -2,22 +2,91 @@
 // Nusantara Ekspor - Landing Page
 // ==========================================
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Globe2, ShieldCheck, Zap, ChevronRight, Package, MessageSquare } from 'lucide-react';
 import { formatCurrency } from '../data/dummy';
-import { productsApi } from '../services/api';
 import FeaturesShowcase from '../components/features/FeaturesShowcase';
+import Pricing from '../components/Pricing';
 import type { Product } from '../types';
 
-export default function LandingPage() {
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+const mockProducts: Product[] = [
+  {
+    id: '1',
+    userId: '1',
+    name: 'Batik Tulis Premium',
+    description: 'Batik tulis handmade dari Yogyakarta',
+    price: 150000,
+    currency: 'IDR',
+    category: 'Hortikultura',
+    images: ['https://via.placeholder.com/300'],
+    specifications: {},
+    minOrder: 1,
+    stock: 10,
+    isActive: true,
+    sellerLocation: 'Yogyakarta',
+    rating: 4.8,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01'
+  },
+  {
+    id: '2',
+    userId: '2',
+    name: 'Kopi Arabica Specialty',
+    description: 'Kopi arabica premium dari Bali',
+    price: 75000,
+    currency: 'IDR',
+    category: 'Perkebunan',
+    images: ['https://via.placeholder.com/300'],
+    specifications: {},
+    minOrder: 1,
+    stock: 20,
+    isActive: true,
+    sellerLocation: 'Bali',
+    rating: 4.9,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01'
+  },
+  {
+    id: '3',
+    userId: '3',
+    name: 'Tenun Ikat Tradisional',
+    description: 'Tenun ikat handmade dari NTT',
+    price: 200000,
+    currency: 'IDR',
+    category: 'Hortikultura',
+    images: ['https://via.placeholder.com/300'],
+    specifications: {},
+    minOrder: 1,
+    stock: 5,
+    isActive: true,
+    sellerLocation: 'NTT',
+    rating: 4.7,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01'
+  },
+  {
+    id: '4',
+    userId: '4',
+    name: 'Madu Hutan Asli',
+    description: 'Madu hutan murni dari Kalimantan',
+    price: 50000,
+    currency: 'IDR',
+    category: 'Perkebunan',
+    images: ['https://via.placeholder.com/300'],
+    specifications: {},
+    minOrder: 1,
+    stock: 15,
+    isActive: true,
+    sellerLocation: 'Kalimantan',
+    rating: 4.6,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01'
+  }
+];
 
-  useEffect(() => {
-    productsApi.list().then((res: any) => {
-      setFeaturedProducts(res.slice(0, 4));
-    }).catch(console.error);
-  }, []);
+export default function LandingPage() {
+  const [featuredProducts] = useState<Product[]>(mockProducts);
 
   return (
     <div className="min-h-screen">
@@ -196,6 +265,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Pricing Section */}
+      <Pricing />
 
       {/* Trust Section */}
       <section className="py-20 lg:py-32 relative">
