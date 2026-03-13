@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useEffect, useState } from 'react';
 import Globe, { type GlobeMethods } from 'react-globe.gl';
 
@@ -98,45 +99,58 @@ export default function InteractiveGlobe() {
     return () => observer.disconnect();
   }, []);
 
-  // Handle Initial View & Auto-Rotation
+  // Handle Initial View, Auto-Rotation, & Zoom
   useEffect(() => {
     if (globeRef.current) {
-      // Focus point on Indonesia initially
-      globeRef.current.pointOfView({ lat: -2, lng: 118, altitude: 2.2 }, 2000);
+      const isMobile = dimensions.width < 768;
+      const altitude = isMobile ? 2.5 : 2.2;
+
+      globeRef.current.pointOfView({ lat: -2, lng: 118, altitude }, 2000);
 
       try {
         const controls = globeRef.current.controls();
         if (controls) {
+          // Putaran otomatis
           controls.autoRotate = true;
           controls.autoRotateSpeed = 0.5;
-          controls.enableZoom = false; // Disable zoom to prevent page scrolling issues on mobile
+          
+          // Fitur Zoom
+          controls.enableZoom = true;
+          controls.zoomSpeed = 0.8;
+          
+          // Batas Zoom agar tidak tembus bumi atau terlalu jauh
+          controls.minDistance = 120; // Paling dekat
+          controls.maxDistance = 400; // Paling jauh
         }
       } catch (e) {
         console.warn('Controls not initialized yet', e);
       }
     }
-  }, [dimensions.width]); // Trigger primarily when mounted & dimension is available
+  }, [dimensions.width]);
 
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] bg-black rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center cursor-move"
+      className="relative w-full h-[500px] sm:h-[600px] md:h-[650px] lg:h-[700px] bg-[#050505] rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center cursor-move"
     >
       {/* Title Header */}
-      <div className="absolute top-6 left-6 z-10 pointer-events-none">
-        <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+      <div className="absolute top-5 left-5 md:top-8 md:left-8 z-10 pointer-events-none">
+        <h3 className="text-lg md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 drop-shadow-md">
           Jalur Ekspor Global
         </h3>
-        <p className="text-sm font-medium text-cyan-400 mt-1">Nusantara ke Pasar Dunia</p>
+        <p className="text-[10px] md:text-sm font-medium text-cyan-400 mt-0.5 md:mt-1 drop-shadow-sm">
+          Nusantara ke Pasar Dunia
+        </p>
       </div>
 
+      {/* Globe Component */}
       {dimensions.width > 0 && dimensions.height > 0 && (
         <Globe
           ref={globeRef}
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
           bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
           backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-          backgroundColor="rgba(0,0,0,1)"
+          backgroundColor="rgba(0,0,0,0)" // Transparan agar menyatu dengan background div
           width={dimensions.width}
           height={dimensions.height}
 
@@ -168,38 +182,58 @@ export default function InteractiveGlobe() {
           atmosphereAltitude={0.15}
           showAtmosphere={true}
 
-          // Optional Performance Flags
-          rendererConfig={{ antialias: true, alpha: false }}
+          rendererConfig={{ antialias: true, alpha: true }}
         />
       )}
 
-      {/* Custom Legend */}
-      <div className="absolute bottom-6 left-6 flex flex-col gap-2.5 z-10 bg-black/40 backdrop-blur-xl p-4 rounded-2xl border border-white/10 pointer-events-auto">
-        <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-1">Rute Aktif</h4>
+      {/* Legend - Diperkecil & Lebih Compact */}
+      <div 
+        className="absolute bottom-4 w-full md:w-auto md:left-6 md:right-auto flex overflow-x-auto md:flex-col gap-2 z-10 px-4 md:px-0 pointer-events-auto snap-x snap-mandatory [&::-webkit-scrollbar]:hidden" 
+        style={{ scrollbarWidth: 'none' }}
+      >
+        <h4 className="hidden md:block text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-1 px-1">
+          Rute Aktif
+        </h4>
+        
         {EXPORT_ROUTES.map((route, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 shadow-sm shrink-0">
-              <span className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_currentColor]" style={{ color: route.color, backgroundColor: route.color }} />
+          <div 
+            key={i} 
+            className="snap-center shrink-0 w-[200px] sm:w-[220px] md:w-max flex items-center gap-2.5 bg-black/40 backdrop-blur-sm p-2 md:p-2.5 rounded-xl border border-white/10 shadow-md transition-colors hover:bg-black/60"
+          >
+            {/* Dot Indicator (Diperkecil) */}
+            <div className="flex items-center justify-center w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/5 border border-white/10 shrink-0">
+              <span 
+                className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full shadow-[0_0_8px_currentColor]" 
+                style={{ color: route.color, backgroundColor: route.color }} 
+              />
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-medium text-gray-200">
+            
+            {/* Route Info (Teks Diperkecil) */}
+            <div className="flex flex-col flex-1 min-w-0">
+              <span className="text-[10px] md:text-[11px] font-semibold text-gray-100 truncate">
                 {route.from.name} <span className="text-white/40 mx-0.5">→</span> {route.to.name}
               </span>
-              <span className="text-[10px] text-gray-400">
-                {route.commodity} ({route.volume})
-              </span>
+              <div className="flex items-center justify-between mt-0.5">
+                <span className="text-[9px] md:text-[10px] text-gray-400 truncate">
+                  {route.commodity}
+                </span>
+                <span className="text-[8px] md:text-[9px] font-medium text-white/70 bg-white/10 px-1.5 py-0.5 rounded-md ml-1.5">
+                  {route.volume}
+                </span>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Interaction Hint */}
-      <div className="absolute top-6 right-6 z-10 pointer-events-none">
-        <div className="flex items-center gap-2 bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-[11px] font-medium text-white/70">
-          <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      {/* Interaction Hint (Diperkecil sedikit) */}
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-10 pointer-events-none">
+        <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/10 text-[9px] md:text-[10px] font-medium text-white/80 shadow-md">
+          <svg className="w-3 h-3 text-cyan-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
           </svg>
-          Geser untuk interaksi
+          <span className="hidden sm:inline">Geser & Zoom bola dunia</span>
+          <span className="sm:hidden">Geser & Zoom</span>
         </div>
       </div>
     </div>
