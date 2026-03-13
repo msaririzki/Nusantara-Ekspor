@@ -16,11 +16,8 @@ class Settings:
     APP_VERSION: str = os.getenv("APP_VERSION", "1.0.0")
     DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
 
-    # Database
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "sqlite+aiosqlite:///./nusantara_ekspor.db",
-    )
+    # Database (Supabase PostgreSQL — wajib set di .env)
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 
     # JWT
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
@@ -34,7 +31,7 @@ class Settings:
 
     # CORS
     CORS_ORIGINS: list[str] = os.getenv(
-        "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000"
+        "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,https://exportmudah.ikydev.site,http://exportmudah.ikydev.site"
     ).split(",")
 
 

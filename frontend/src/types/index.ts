@@ -36,14 +36,10 @@ export interface Product {
 }
 
 export type ProductCategory =
-  | 'Kerajinan Tangan'
-  | 'Makanan & Minuman'
-  | 'Tekstil & Fashion'
-  | 'Furnitur & Interior'
-  | 'Rempah-rempah'
-  | 'Kosmetik & Kecantikan'
-  | 'Pertanian'
-  | 'Lainnya';
+  | 'Agrikultur'
+  | 'Hortikultura'
+  | 'Perkebunan'
+  | 'Kehutanan';
 
 export interface ChatRoom {
   id: string;

@@ -63,6 +63,14 @@ async def health_check():
 
 
 # ==========================================
+# Serve Uploaded Media Files
+# ==========================================
+uploads_dir = Path(__file__).parent / "uploads"
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
+
+# ==========================================
 # Serve Frontend Static Files (Production)
 # ==========================================
 # Frontend dist folder is at ../frontend/dist

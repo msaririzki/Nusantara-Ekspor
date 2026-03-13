@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 
 class ChatRoomCreate(BaseModel):
-    buyer_id: str
+    umkm_id: str
     product_id: str | None = None
 
 

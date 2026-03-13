@@ -2,9 +2,12 @@
 # Nusantara Ekspor - Products Router
 # ==========================================
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
+import shutil
+import uuid
+from pathlib import Path
 
 from database import get_db
 from models.user import User
@@ -77,6 +80,54 @@ async def get_product(product_id: str, db: AsyncSession = Depends(get_db)):
         )
 
     return product
+
+
+# Upload directory
+UPLOAD_DIR = Path(__file__).parent.parent / "uploads" / "products"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@router.post("/upload-image")
+async def upload_product_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload a product image and return its URL (UMKM only)."""
+    if current_user.role != "umkm":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Hanya akun UMKM yang bisa mengunggah gambar produk",
+        )
+
+    # Validasi extension
+    allowed_extensions = {".jpg", ".jpeg", ".webp", ".png"}
+    ext = Path(file.filename).suffix.lower()
+    if ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Format file tidak didukung. Gunakan: {', '.join(allowed_extensions)}",
+        )
+
+    # Generate unique filename
+    unique_filename = f"{uuid.uuid4()}{ext}"
+    file_path = UPLOAD_DIR / unique_filename
+
+    # Save file
+    try:
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Gagal menyimpan file: {str(e)}",
+        )
+    finally:
+        file.file.close()
+
+    # Return public URL path
+    # Akan diakses oleh frontend melalui /uploads/products/filename.jpg
+    image_url = f"/uploads/products/{unique_filename}"
+    return {"url": image_url}
 
 
 @router.post("", response_model=ProductResponse, status_code=201)

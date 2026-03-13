@@ -2,10 +2,8 @@
 // Nusantara Ekspor - API Service
 // ==========================================
 
-// Auto-detect API URL: use same origin in production, localhost in dev
-const API_BASE_URL = import.meta.env.PROD
-  ? ''  // Same origin — backend serves frontend in production
-  : 'http://localhost:8000';
+// Use relative path for API so it works across localhost, production, and tunnels via Vite proxy
+const API_BASE_URL = '';
 
 interface ApiOptions {
   method?: string;
@@ -129,11 +127,34 @@ export const productsApi = {
 
   delete: (id: string, token: string) =>
     apiFetch<void>(`/api/products/${id}`, { method: 'DELETE', token }),
+
+  uploadImage: async (file: File, token: string): Promise<{ url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/api/products/upload-image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Gagal mengunggah gambar' }));
+      throw new Error(error.detail || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
 };
 
 // ===== Chat B2B API =====
 
 export const chatApi = {
+  createRoom: (data: { umkm_id: string; product_id?: string }, token: string) =>
+    apiFetch<unknown>('/api/chat/rooms', { method: 'POST', body: data, token }),
+    
   getRooms: (token: string) => 
     apiFetch<unknown[]>('/api/chat/rooms', { method: 'GET', token }),
     

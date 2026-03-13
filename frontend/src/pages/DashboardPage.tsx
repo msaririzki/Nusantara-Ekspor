@@ -2,18 +2,25 @@
 // Nusantara Ekspor - Dashboard Page
 // ==========================================
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Package, Eye, MessageSquare, TrendingUp, Plus, Edit3, Trash2,
-  BarChart3, ArrowUpRight, DollarSign, X, Save, Image as ImageIcon
+  BarChart3, ArrowUpRight, DollarSign, X, Save, Image as ImageIcon, Loader2
 } from 'lucide-react';
-import { dummyProducts, dummyDashboardStats, formatCurrency, productCategories } from '../data/dummy';
+import { dummyDashboardStats, formatCurrency, productCategories } from '../data/dummy';
 import type { Product, ProductCategory } from '../types';
+import { productsApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function DashboardPage() {
-  const [products, setProducts] = useState<Product[]>(dummyProducts);
+  const { user, token } = useAuth();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const stats = dummyDashboardStats;
 
   const [formData, setFormData] = useState({
@@ -23,7 +30,29 @@ export default function DashboardPage() {
     category: '' as ProductCategory | '',
     minOrder: 1,
     stock: 0,
+    images: [] as string[]
   });
+
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      // Backend list doesn't strictly filter by user_id yet so we handle it if needed
+      // but assuming the backend list logic or we just show what we fetch (if API handles it)
+      // Actually standard API list fetches ALL active products. Let's assume we filter by umkm visually for now
+      // Or we just call the api. In reality we should pass user_id filter if supported.
+      const data = await productsApi.list() as Product[];
+      // Filter out only products belong to this user
+      setProducts(data.filter(p => p.userId === user?.id));
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [user]);
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -31,54 +60,85 @@ export default function DashboardPage() {
       name: product.name,
       description: product.description,
       price: product.price,
-      category: product.category,
-      minOrder: product.minOrder,
-      stock: product.stock,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      category: product.category as any,
+      // API mengembalikan min_order dalam snake_case namun di map sebagai min_order oleh axios (secara eksplisit ts: any di product data)
+      minOrder: (product as any).min_order ?? product.minOrder ?? 1,
+      stock: product.stock || 0,
+      images: product.images || []
     });
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    setProducts(products.filter((p) => p.id !== id));
+  const handleDelete = async (id: string) => {
+    if (!token || !confirm('Yakin ingin menghapus produk ini?')) return;
+    try {
+      await productsApi.delete(id, token);
+      setProducts(products.filter((p) => p.id !== id));
+    } catch (error) {
+      alert('Gagal menghapus produk');
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingProduct) {
-      setProducts(
-        products.map((p) =>
-          p.id === editingProduct.id
-            ? { ...p, ...formData, category: (formData.category || p.category) as ProductCategory, updatedAt: new Date().toISOString() }
-            : p
-        )
-      );
-    } else {
-      const newProduct: Product = {
-        id: Date.now().toString(),
-        userId: 'u1',
-        ...formData,
-        category: formData.category as ProductCategory,
-        currency: 'IDR',
-        images: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600'],
-        specifications: {},
-        isActive: true,
-        seller: 'My Store',
-        sellerLocation: 'Indonesia',
-        rating: 0,
-        reviewCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setProducts([newProduct, ...products]);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+
+    try {
+      setUploadingImage(true);
+      const res = await productsApi.uploadImage(file, token);
+      // Karena environment dev bergantung pada vite proxy untuk /uploads, dan di production ditaruh se-domain 
+      // Kita langsung set formData dengan relative url (misal /uploads/...) .
+      const safeUrl = res.url.startsWith('/') ? res.url : `/${res.url}`;
+      
+      setFormData(prev => ({
+        ...prev,
+        images: [safeUrl]
+      }));
+    } catch (error) {
+      alert('Gagal mengupload gambar. Pastikan format JPG/PNG dan ukuran maksimal 5MB.');
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
-    setShowForm(false);
-    setEditingProduct(null);
-    setFormData({ name: '', description: '', price: 0, category: '', minOrder: 1, stock: 0 });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+
+    try {
+      setIsSaving(true);
+      const payload = {
+        name: formData.name,
+        description: formData.description,
+        price: formData.price,
+        category: formData.category,
+        min_order: formData.minOrder,
+        stock: formData.stock,
+        images: formData.images,
+        currency: 'IDR'
+      };
+
+      if (editingProduct) {
+        await productsApi.update(editingProduct.id, payload, token);
+      } else {
+        await productsApi.create(payload, token);
+      }
+      
+      setShowForm(false);
+      setEditingProduct(null);
+      fetchProducts(); // Refresh list
+    } catch (error) {
+      alert('Terjadi kesalahan saat menyimpan produk.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleNew = () => {
     setEditingProduct(null);
-    setFormData({ name: '', description: '', price: 0, category: '', minOrder: 1, stock: 0 });
+    setFormData({ name: '', description: '', price: 0, category: '', minOrder: 1, stock: 0, images: [] });
     setShowForm(true);
   };
 
@@ -185,66 +245,84 @@ export default function DashboardPage() {
               Daftar Produk ({products.length})
             </h2>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Produk</th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Kategori</th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Harga</th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Stok</th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Status</th>
-                  <th className="text-right text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => (
-                  <tr key={product.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-white/5">
-                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-white font-medium text-sm truncate max-w-[200px]">{product.name}</div>
-                          <div className="text-gray-500 text-xs">{product.seller}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="badge-blue text-xs">{product.category}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-emerald-400 font-medium text-sm">{formatCurrency(product.price)}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-gray-300 text-sm">{product.stock} pcs</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={product.isActive ? 'badge-emerald text-xs' : 'badge text-xs bg-red-500/20 text-red-300 border border-red-500/30'}>
-                        {product.isActive ? 'Aktif' : 'Nonaktif'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(product)}
-                          className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
-                        >
-                          <Edit3 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product.id)}
-                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+          <div className="overflow-x-auto min-h-[200px]">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+                <Loader2 size={32} className="animate-spin mb-3 text-blue-500" />
+                <p>Memuat profil UMKM dan katalog produk...</p>
+              </div>
+            ) : products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+                <Package size={32} className="mb-3 opacity-50" />
+                <p>Belum ada produk yang ditambahkan.</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Produk</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Kategori</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Harga</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Stok</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Status</th>
+                    <th className="text-right text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-4">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {products.map((product) => (
+                    <tr key={product.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-white/5">
+                            {product.images && product.images.length > 0 ? (
+                              <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-white/10">
+                                <ImageIcon size={20} className="text-gray-500" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-white font-medium text-sm truncate max-w-[200px]">{product.name}</div>
+                            <div className="text-gray-500 text-xs">{product.seller}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="badge-blue text-xs">{product.category}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-emerald-400 font-medium text-sm">{formatCurrency(product.price)}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-gray-300 text-sm">{product.stock} pcs</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={product.isActive ? 'badge-emerald text-xs' : 'badge text-xs bg-red-500/20 text-red-300 border border-red-500/30'}>
+                          {product.isActive ? 'Aktif' : 'Nonaktif'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(product)}
+                            className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
+                          >
+                            <Edit3 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -335,19 +413,51 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Gambar Produk</label>
-                  <div className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center hover:border-blue-500/30 transition-colors cursor-pointer">
-                    <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-                    <p className="text-gray-400 text-sm">Klik untuk upload gambar</p>
-                    <p className="text-gray-500 text-xs mt-1">PNG, JPG max 5MB</p>
-                  </div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Gambar Produk (Max 1)</label>
+                  
+                  {formData.images.length > 0 ? (
+                    <div className="relative w-48 h-48 rounded-xl overflow-hidden mb-2 group">
+                      <img src={formData.images[0]} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, images: [] })}
+                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                          title="Hapus Gambar"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => !uploadingImage && fileInputRef.current?.click()}
+                      className={`border-2 border-dashed border-white/10 rounded-xl p-6 text-center transition-colors cursor-pointer ${uploadingImage ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500/30'}`}
+                    >
+                      {uploadingImage ? (
+                        <Loader2 size={32} className="text-blue-500 mx-auto mb-2 animate-spin" />
+                      ) : (
+                        <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
+                      )}
+                      <p className="text-gray-400 text-sm">{uploadingImage ? 'Mengunggah...' : 'Klik untuk upload gambar'}</p>
+                      <p className="text-gray-500 text-xs mt-1">PNG, JPG max 5MB</p>
+                    </div>
+                  )}
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/png, image/jpeg, image/webp"
+                    className="hidden"
+                  />
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="submit" className="btn-primary flex-1 flex items-center justify-center gap-2">
-                    <Save size={16} />
+                  <button type="submit" disabled={isSaving || uploadingImage} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                    {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                     {editingProduct ? 'Simpan Perubahan' : 'Tambah Produk'}
                   </button>
-                  <button type="button" onClick={() => setShowForm(false)} className="btn-secondary flex-1">
+                  <button type="button" onClick={() => setShowForm(false)} disabled={isSaving} className="btn-secondary flex-1">
                     Batal
                   </button>
                 </div>

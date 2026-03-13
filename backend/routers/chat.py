@@ -9,7 +9,7 @@ import json
 from database import get_db
 from models.chat import ChatRoom, ChatMessage
 from models.user import User
-from schemas.chat import ChatRoomResponse, ChatMessageResponse, ChatMessageCreate
+from schemas.chat import ChatRoomResponse, ChatMessageResponse, ChatMessageCreate, ChatRoomCreate
 from services.gemini_service import translate_text
 from utils.dependencies import get_current_user
 from sqlalchemy import select, or_, desc
@@ -85,6 +85,55 @@ async def get_chat_rooms(
         })
         
     return response_rooms
+
+
+@router.post("/rooms", response_model=ChatRoomResponse)
+async def create_chat_room(
+    room_data: ChatRoomCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Create or get a chat room between a user and an UMKM."""
+    buyer_id = current_user.id
+    umkm_id = room_data.umkm_id
+    
+    # Optional: check if room already exists for this pair
+    stmt = select(ChatRoom).where(
+        ChatRoom.umkm_id == umkm_id,
+        ChatRoom.buyer_id == buyer_id
+    )
+    if room_data.product_id:
+        stmt = stmt.where(ChatRoom.product_id == room_data.product_id)
+        
+    result = await db.execute(stmt)
+    existing_room = result.scalars().first()
+    
+    if existing_room:
+        room = existing_room
+    else:
+        room = ChatRoom(
+            umkm_id=umkm_id,
+            buyer_id=buyer_id,
+            product_id=room_data.product_id
+        )
+        db.add(room)
+        await db.flush()
+        await db.refresh(room)
+        
+    other_id = room.buyer_id if current_user.id == room.umkm_id else room.umkm_id
+    users_result = await db.execute(select(User).where(User.id == other_id))
+    other_user = users_result.scalars().first()
+
+    return {
+        "id": room.id,
+        "umkm_id": room.umkm_id,
+        "buyer_id": room.buyer_id,
+        "product_id": room.product_id,
+        "created_at": room.created_at,
+        "updated_at": room.updated_at,
+        "other_user_name": other_user.full_name if other_user else "Unknown",
+        "other_user_country": other_user.country if other_user else "Unknown"
+    }
 
 
 @router.get("/{room_id}/messages", response_model=list[ChatMessageResponse])

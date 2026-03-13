@@ -3,6 +3,7 @@
 // ==========================================
 
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Send, Zap, Search, MoreVertical, Phone, Video, Globe, CheckCheck, Clock, Circle, ChevronLeft, Loader2 } from 'lucide-react';
 import type { ChatRoom, ChatMessage } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -116,6 +117,8 @@ function ChatSidebarItem({
 
 export default function ChatPage() {
   const { user, token } = useAuth();
+  const location = useLocation();
+  const initialActiveRoomId = location.state?.activeRoomId;
   const [activeRoom, setActiveRoom] = useState<ChatRoom | null>(null);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -150,8 +153,14 @@ export default function ChatPage() {
           };
         });
         setRooms(mappedRooms);
-        if (mappedRooms.length > 0 && !activeRoom) {
-          setActiveRoom(mappedRooms[0]);
+        
+        if (mappedRooms.length > 0) {
+          if (initialActiveRoomId) {
+            const foundRoom = mappedRooms.find(r => r.id === initialActiveRoomId);
+            setActiveRoom(foundRoom || mappedRooms[0]);
+          } else if (!activeRoom) {
+            setActiveRoom(mappedRooms[0]);
+          }
         }
       } catch (err) {
         console.error("Failed to load chat rooms", err);
@@ -161,7 +170,7 @@ export default function ChatPage() {
     };
 
     loadRooms();
-  }, [token, user]);
+  }, [token, user, initialActiveRoomId]);
 
   // Load messages when active room changes
   useEffect(() => {
@@ -194,13 +203,12 @@ export default function ChatPage() {
     loadMessages();
 
     // WebSocket logic
-    const wsUrl = import.meta.env.PROD
-      ? `ws://${window.location.host}/api/chat/ws/${activeRoom.id}`
-      : `ws://localhost:8000/api/chat/ws/${activeRoom.id}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/api/chat/ws/${activeRoom.id}`;
       
     const socket = new WebSocket(wsUrl);
     
-    socket.onopen = () => console.log('WebSocket connected');
+    socket.onopen = () => {};
     
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);

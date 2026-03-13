@@ -2,16 +2,79 @@
 // Nusantara Ekspor - Product Detail Page
 // ==========================================
 
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Star, MapPin, Package, ShieldCheck, MessageSquare,
-  Share2, Heart, Truck, Clock, CheckCircle2
+  Share2, Heart, Truck, Clock, CheckCircle2, Loader2, Image as ImageIcon
 } from 'lucide-react';
-import { dummyProducts, formatCurrency } from '../data/dummy';
+import { formatCurrency } from '../data/dummy';
+import { productsApi, chatApi } from '../services/api';
+import type { Product } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
-  const product = dummyProducts.find((p) => p.id === id);
+  const navigate = useNavigate();
+  const { user, token } = useAuth();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+
+  const handleContactSeller = async () => {
+    if (!token || !user) {
+      alert("Silakan login terlebih dahulu untuk menghubungi seller.");
+      navigate('/login');
+      return;
+    }
+
+    if (user.id === product?.userId) {
+      alert("Anda adalah penjual produk ini.");
+      return;
+    }
+
+    try {
+      setIsCreatingChat(true);
+      const res: any = await chatApi.createRoom({
+        umkm_id: product!.userId,
+        product_id: product!.id
+      }, token);
+      
+      navigate('/chat', { state: { activeRoomId: res.id } });
+    } catch (error) {
+      console.error(error);
+      alert("Gagal membuat percakapan dengan seller");
+    } finally {
+      setIsCreatingChat(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+      try {
+        setIsLoading(true);
+        const data = await productsApi.get(id) as Product;
+        setProduct(data);
+      } catch (error) {
+        console.error('Failed to fetch product details', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-gray-400">
+          <Loader2 size={48} className="animate-spin mb-4 text-blue-500 mx-auto" />
+          <p className="text-lg">Memuat rincian produk...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -47,12 +110,19 @@ export default function ProductDetailPage() {
           {/* Product Image */}
           <div>
             <div className="glass-card overflow-hidden">
-              <div className="aspect-square relative">
-                <img
-                  src={product.images[0]}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="aspect-square relative bg-white/5">
+                {product.images && product.images.length > 0 ? (
+                  <img
+                    src={product.images[0]}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                    <ImageIcon size={64} className="mb-4 opacity-50" />
+                    <span>Tidak ada gambar</span>
+                  </div>
+                )}
                 <div className="absolute top-4 left-4 flex gap-2">
                   <span className="badge-blue">{product.category}</span>
                   {product.isActive && <span className="badge-emerald">Aktif</span>}
@@ -69,48 +139,49 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* Product Info */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              {product.rating && (
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      size={16}
-                      className={
-                        i < Math.floor(product.rating!)
-                          ? 'text-amber-400 fill-amber-400'
-                          : 'text-gray-600'
-                      }
-                    />
-                  ))}
-                  <span className="text-amber-400 font-medium ml-1">{product.rating}</span>
-                  <span className="text-gray-500 text-sm">({product.reviewCount} ulasan)</span>
+            {/* Product Info */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                {product.rating && (
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        size={16}
+                        className={
+                          i < Math.floor(product.rating!)
+                            ? 'text-amber-400 fill-amber-400'
+                            : 'text-gray-600'
+                        }
+                      />
+                    ))}
+                    <span className="text-amber-400 font-medium ml-1">{product.rating}</span>
+                    <span className="text-gray-500 text-sm">({(product as any).review_count ?? product.reviewCount ?? 0} ulasan)</span>
+                  </div>
+                )}
+              </div>
+
+              <h1 className="text-3xl lg:text-4xl font-bold font-display text-white mb-4">
+                {product.name}
+              </h1>
+
+              <div className="flex items-center gap-2 mb-6">
+                <MapPin size={16} className="text-blue-400" />
+                <span className="text-gray-400">{product.seller || 'Nusantara Ekspor Seller'}</span>
+                <span className="text-gray-600">•</span>
+                <span className="text-gray-400">{(product as any).seller_location ?? product.sellerLocation ?? 'Indonesia'}</span>
+              </div>
+
+              <div className="glass-card p-6 mb-6">
+                <div className="text-sm text-gray-400 mb-1">Harga per unit</div>
+                <div className="text-3xl font-bold text-emerald-400 mb-2">
+                  {formatCurrency(product.price)}
                 </div>
-              )}
-            </div>
-
-            <h1 className="text-3xl lg:text-4xl font-bold font-display text-white mb-4">
-              {product.name}
-            </h1>
-
-            <div className="flex items-center gap-2 mb-6">
-              <MapPin size={16} className="text-blue-400" />
-              <span className="text-gray-400">{product.seller}</span>
-              <span className="text-gray-600">•</span>
-              <span className="text-gray-400">{product.sellerLocation}</span>
-            </div>
-
-            <div className="glass-card p-6 mb-6">
-              <div className="text-sm text-gray-400 mb-1">Harga per unit</div>
-              <div className="text-3xl font-bold text-emerald-400 mb-2">
-                {formatCurrency(product.price)}
+                <div className="text-gray-500 text-sm">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  Minimum order: <span className="text-white font-medium">{(product as any).min_order ?? product.minOrder ?? 1} pcs</span>
+                </div>
               </div>
-              <div className="text-gray-500 text-sm">
-                Minimum order: <span className="text-white font-medium">{product.minOrder} pcs</span>
-              </div>
-            </div>
 
             <p className="text-gray-300 leading-relaxed mb-6">{product.description}</p>
 
@@ -151,10 +222,14 @@ export default function ProductDetailPage() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <Link to="/chat" className="btn-primary flex-1 flex items-center justify-center gap-2">
-                <MessageSquare size={18} />
+              <button 
+                onClick={handleContactSeller} 
+                disabled={isCreatingChat} 
+                className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isCreatingChat ? <Loader2 size={18} className="animate-spin" /> : <MessageSquare size={18} />}
                 Hubungi Seller
-              </Link>
+              </button>
               <button className="btn-accent flex-1 flex items-center justify-center gap-2">
                 <Package size={18} />
                 Pesan Sampel

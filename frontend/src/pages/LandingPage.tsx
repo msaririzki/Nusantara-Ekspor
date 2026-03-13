@@ -2,13 +2,22 @@
 // Nusantara Ekspor - Landing Page
 // ==========================================
 
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Globe2, ShieldCheck, Zap, ChevronRight, Package, MessageSquare } from 'lucide-react';
-import { dummyProducts, formatCurrency } from '../data/dummy';
+import { formatCurrency } from '../data/dummy';
+import { productsApi } from '../services/api';
 import FeaturesShowcase from '../components/features/FeaturesShowcase';
+import type { Product } from '../types';
 
 export default function LandingPage() {
-  const featuredProducts = dummyProducts.slice(0, 4);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    productsApi.list().then((res: any) => {
+      setFeaturedProducts(res.slice(0, 4));
+    }).catch(console.error);
+  }, []);
 
   return (
     <div className="min-h-screen">

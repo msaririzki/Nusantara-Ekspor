@@ -13,6 +13,7 @@ backend/**/__pycache__/
 backend/*.db
 
 # Environment
+.env
 backend/.env
 
 # Node
@@ -23,6 +24,9 @@ frontend/dist-ssr/
 # Logs
 *.log
 npm-debug.log*
+
+# Uploads
+backend/uploads/
 
 # IDE
 .vscode/
