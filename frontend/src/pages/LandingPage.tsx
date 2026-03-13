@@ -3,8 +3,9 @@
 // ==========================================
 
 import { Link } from 'react-router-dom';
-import { ArrowRight, Package, MessageSquare, Bot, Star, Globe2, ShieldCheck, Zap, ChevronRight } from 'lucide-react';
+import { ArrowRight, Star, Globe2, ShieldCheck, Zap, ChevronRight, Package, MessageSquare } from 'lucide-react';
 import { dummyProducts, formatCurrency } from '../data/dummy';
+import FeaturesShowcase from '../components/features/FeaturesShowcase';
 
 export default function LandingPage() {
   const featuredProducts = dummyProducts.slice(0, 4);
@@ -123,66 +124,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 lg:py-32 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-950/20 to-transparent" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="badge-blue mb-4 inline-flex">
-              <Zap size={14} className="mr-1.5" />
-              Fitur Unggulan
-            </div>
-            <h2 className="section-heading text-white mb-4">
-              Solusi Lengkap untuk <span className="gradient-text">Ekspor Digital</span>
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Tiga fitur canggih yang dirancang khusus untuk mengatasi tantangan ekspor UMKM Indonesia
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-            {[
-              {
-                icon: Package,
-                title: 'Katalog Produk Digital',
-                description: 'Etalase online premium untuk memajang produk kebanggaan Indonesia. Tampilkan foto, harga, dan spesifikasi lengkap agar mudah ditemukan importir dari seluruh dunia.',
-                gradient: 'from-blue-500 to-cyan-500',
-                badge: 'badge-blue',
-                badgeText: '📦 Katalog',
-              },
-              {
-                icon: MessageSquare,
-                title: 'Live Chat B2B + Auto-Translate',
-                description: 'Negosiasi tanpa kendala bahasa! Chat real-time dengan teknologi AI Gemini yang otomatis menerjemahkan antara Bahasa Indonesia, Inggris, dan Mandarin.',
-                gradient: 'from-purple-500 to-pink-500',
-                badge: 'badge-purple',
-                badgeText: '💬 AI Chat',
-              },
-              {
-                icon: Bot,
-                title: 'Chatbot Asisten Ekspor 24/7',
-                description: 'Asisten pintar yang siap menjawab pertanyaan seputar alur ekspor, syarat kelayakan produk, dokumen, dan izin yang diperlukan kapan saja.',
-                gradient: 'from-emerald-500 to-teal-500',
-                badge: 'badge-emerald',
-                badgeText: '🤖 24/7',
-              },
-            ].map(({ icon: Icon, title, description, gradient, badge, badgeText }, i) => (
-              <div
-                key={title}
-                className="glass-card-hover p-8 group"
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
-                <div className={`w-14 h-14 bg-gradient-to-br ${gradient} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <Icon size={28} className="text-white" />
-                </div>
-                <span className={`${badge} mb-3`}>{badgeText}</span>
-                <h3 className="text-xl font-bold text-white mt-3 mb-3">{title}</h3>
-                <p className="text-gray-400 leading-relaxed">{description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* 3 Fitur Andalan — Globe 3D + Interactive Cards */}
+      <FeaturesShowcase />
 
       {/* Featured Products */}
       <section className="py-20 lg:py-32">

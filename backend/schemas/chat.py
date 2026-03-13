@@ -17,6 +17,9 @@ class ChatRoomResponse(BaseModel):
     buyer_id: str
     product_id: str | None
     created_at: datetime
+    updated_at: datetime
+    other_user_name: str | None = None
+    other_user_country: str | None = None
 
     class Config:
         from_attributes = True
@@ -37,6 +40,7 @@ class ChatMessageResponse(BaseModel):
     original_language: str
     target_language: str | None
     created_at: datetime
+    is_translated: bool
 
     class Config:
         from_attributes = True

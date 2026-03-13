@@ -10,7 +10,8 @@ class UserBase(BaseModel):
     email: EmailStr
     full_name: str
     company_name: str
-    role: str  # 'umkm' or 'buyer'
+    role: str  # 'umkm', 'buyer', or 'admin'
+    country: str = "Indonesia"
     phone: str | None = None
     address: str | None = None
 

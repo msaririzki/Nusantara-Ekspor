@@ -23,10 +23,10 @@ async def register_user(db: AsyncSession, user_data: UserCreate) -> User:
             detail="Email sudah terdaftar",
         )
 
-    if user_data.role not in ("umkm", "buyer"):
+    if user_data.role not in ("umkm", "buyer", "admin"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Role harus 'umkm' atau 'buyer'",
+            detail="Role harus 'umkm', 'buyer', atau 'admin'",
         )
 
     user = User(
@@ -35,6 +35,7 @@ async def register_user(db: AsyncSession, user_data: UserCreate) -> User:
         full_name=user_data.full_name,
         company_name=user_data.company_name,
         role=user_data.role,
+        country=user_data.country,
         phone=user_data.phone,
         address=user_data.address,
     )

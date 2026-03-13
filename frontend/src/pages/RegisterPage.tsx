@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Building2, Phone, Eye, EyeOff, UserPlus, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, Building2, Phone, Eye, EyeOff, UserPlus, AlertCircle, Loader2, Globe } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function RegisterPage() {
@@ -16,6 +16,7 @@ export default function RegisterPage() {
     companyName: '',
     phone: '',
     role: 'umkm' as 'umkm' | 'buyer',
+    country: 'Indonesia',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
@@ -56,6 +57,7 @@ export default function RegisterPage() {
         full_name: formData.fullName,
         company_name: formData.companyName,
         role: formData.role,
+        country: formData.role === 'umkm' ? 'Indonesia' : formData.country,
         phone: formData.phone || undefined,
       });
       navigate(formData.role === 'umkm' ? '/dashboard' : '/catalog', { replace: true });
@@ -185,6 +187,32 @@ export default function RegisterPage() {
                 />
               </div>
             </div>
+
+            {formData.role === 'buyer' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">Negara Asal</label>
+                <div className="relative">
+                  <Globe size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <select
+                    value={formData.country}
+                    onChange={(e) => update('country', e.target.value)}
+                    className="input-field !pl-11 appearance-none"
+                    disabled={isSubmitting}
+                  >
+                    <option value="United States">Amerika Serikat (Inggris)</option>
+                    <option value="China">China (Mandarin)</option>
+                    <option value="Japan">Jepang (Jepang)</option>
+                    <option value="South Korea">Korea Selatan (Korea)</option>
+                    <option value="United Kingdom">Inggris Raya (Inggris)</option>
+                    <option value="Australia">Australia (Inggris)</option>
+                    <option value="Singapore">Singapura (Inggris)</option>
+                    <option value="Germany">Jerman (Jerman)</option>
+                    <option value="France">Prancis (Prancis)</option>
+                    <option value="Saudi Arabia">Arab Saudi (Arab)</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>

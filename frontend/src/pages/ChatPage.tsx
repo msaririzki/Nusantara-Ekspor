@@ -2,13 +2,12 @@
 // Nusantara Ekspor - Chat B2B Page
 // ==========================================
 
-import { useState } from 'react';
-import {
-  Send, Zap, Search, MoreVertical, Phone, Video,
-  Globe, CheckCheck, Clock, Circle, ChevronLeft
-} from 'lucide-react';
-import { dummyChatRooms, dummyChatMessages } from '../data/dummy';
+import { useState, useEffect } from 'react';
+import { Send, Zap, Search, MoreVertical, Phone, Video, Globe, CheckCheck, Clock, Circle, ChevronLeft, Loader2 } from 'lucide-react';
 import type { ChatRoom, ChatMessage } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { chatApi } from '../services/api';
+import { getLanguageCodeFromCountry } from '../utils/language';
 
 function TranslateBadge() {
   return (
@@ -116,17 +115,130 @@ function ChatSidebarItem({
 }
 
 export default function ChatPage() {
-  const [activeRoom, setActiveRoom] = useState<ChatRoom>(dummyChatRooms[0]);
-  const [messages] = useState<ChatMessage[]>(dummyChatMessages);
+  const { user, token } = useAuth();
+  const [activeRoom, setActiveRoom] = useState<ChatRoom | null>(null);
+  const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [ws, setWs] = useState<WebSocket | null>(null);
 
-  const roomMessages = messages.filter((m) => m.roomId === activeRoom.id);
+  // Dynamic target language logic based on country
+  const sourceLang = user?.country ? getLanguageCodeFromCountry(user.country) : (user?.role === 'umkm' ? 'id' : 'en');
+  const targetLang = activeRoom?.buyerCountry ? getLanguageCodeFromCountry(activeRoom.buyerCountry) : (user?.role === 'umkm' ? 'en' : 'id');
+
+  // Load rooms
+  useEffect(() => {
+    if (!token) return;
+
+    const loadRooms = async () => {
+      try {
+        const data: any = await chatApi.getRooms(token);
+        // Map backend ChatRoomResponse to frontend ChatRoom type
+        const mappedRooms: ChatRoom[] = data.map((r: any) => {
+          return {
+            id: r.id,
+            umkmId: r.umkm_id,
+            buyerId: r.buyer_id,
+            productId: r.product_id || '',
+            buyerName: r.other_user_name || 'Unknown',
+            buyerCountry: r.other_user_country || '-',
+            unreadCount: 0,
+            isOnline: true // Mocked
+          };
+        });
+        setRooms(mappedRooms);
+        if (mappedRooms.length > 0 && !activeRoom) {
+          setActiveRoom(mappedRooms[0]);
+        }
+      } catch (err) {
+        console.error("Failed to load chat rooms", err);
+      } finally {
+        setIsLoadingRooms(false);
+      }
+    };
+
+    loadRooms();
+  }, [token, user]);
+
+  // Load messages when active room changes
+  useEffect(() => {
+    if (!activeRoom || !token) return;
+
+    const loadMessages = async () => {
+      setIsLoadingMessages(true);
+      try {
+        const data: any = await chatApi.getRoomMessages(activeRoom.id, token);
+        const mappedMsgs: ChatMessage[] = data.map((m: any) => ({
+          id: m.id,
+          roomId: m.room_id,
+          senderId: m.sender_id,
+          originalMessage: m.original_message,
+          translatedMessage: m.translated_message,
+          originalLanguage: m.original_language,
+          targetLanguage: m.target_language,
+          isTranslated: m.is_translated,
+          timestamp: m.created_at,
+          status: 'read'
+        }));
+        setMessages(mappedMsgs);
+      } catch (err) {
+        console.error("Failed to load messages", err);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    };
+
+    loadMessages();
+
+    // WebSocket logic
+    const wsUrl = import.meta.env.PROD
+      ? `ws://${window.location.host}/api/chat/ws/${activeRoom.id}`
+      : `ws://localhost:8000/api/chat/ws/${activeRoom.id}`;
+      
+    const socket = new WebSocket(wsUrl);
+    
+    socket.onopen = () => console.log('WebSocket connected');
+    
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const incomingMsg: ChatMessage = {
+        id: data.id || `temp-${Date.now()}`,
+        roomId: data.room_id || activeRoom.id,
+        senderId: data.sender_id,
+        originalMessage: data.original_message,
+        translatedMessage: data.translated_message,
+        originalLanguage: data.original_language,
+        targetLanguage: data.target_language,
+        isTranslated: data.is_translated,
+        timestamp: data.created_at || new Date().toISOString(),
+        status: 'delivered'
+      };
+      
+      setMessages(prev => [...prev, incomingMsg]);
+    };
+    
+    setWs(socket);
+
+    return () => {
+      socket.close();
+    };
+  }, [activeRoom, token]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
-    // In real app, this would send via WebSocket
+    if (!newMessage.trim() || !ws || !user) return;
+    
+    const payload = {
+      message: newMessage,
+      source_language: sourceLang,
+      target_language: targetLang,
+      sender_id: user.id
+    };
+    
+    ws.send(JSON.stringify(payload));
     setNewMessage('');
   };
 
@@ -155,17 +267,25 @@ export default function ChatPage() {
 
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto">
-          {dummyChatRooms.map((room) => (
-            <ChatSidebarItem
-              key={room.id}
-              room={room}
-              isActive={activeRoom.id === room.id}
-              onClick={() => {
-                setActiveRoom(room);
-                setShowSidebar(false);
-              }}
-            />
-          ))}
+          {isLoadingRooms ? (
+            <div className="flex items-center justify-center h-full text-gray-400">
+              <Loader2 className="animate-spin w-6 h-6 mr-2" /> Memuat obrolan...
+            </div>
+          ) : rooms.length === 0 ? (
+            <div className="text-center p-4 text-gray-500 text-sm">Belum ada obrolan.</div>
+          ) : (
+            rooms.map((room) => (
+              <ChatSidebarItem
+                key={room.id}
+                room={room}
+                isActive={activeRoom?.id === room.id}
+                onClick={() => {
+                  setActiveRoom(room);
+                  setShowSidebar(false);
+                }}
+              />
+            ))
+          )}
         </div>
       </div>
 
@@ -182,20 +302,20 @@ export default function ChatPage() {
             </button>
             <div className="relative">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                {activeRoom.buyerName.charAt(0)}
+                {activeRoom?.buyerName?.charAt(0) || '?'}
               </div>
-              {activeRoom.isOnline && (
+              {activeRoom?.isOnline && (
                 <Circle size={8} className="absolute bottom-0 right-0 text-emerald-400 fill-emerald-400" />
               )}
             </div>
             <div>
-              <div className="text-white font-medium text-sm">{activeRoom.buyerName}</div>
+              <div className="text-white font-medium text-sm">{activeRoom?.buyerName || 'Pilih Percakapan'}</div>
               <div className="flex items-center gap-1.5">
                 <Globe size={10} className="text-gray-500" />
-                <span className="text-gray-500 text-xs">{activeRoom.buyerCountry}</span>
+                <span className="text-gray-500 text-xs">{activeRoom?.buyerCountry || '-'}</span>
                 <span className="text-gray-600 text-xs">•</span>
-                <span className={`text-xs ${activeRoom.isOnline ? 'text-emerald-400' : 'text-gray-500'}`}>
-                  {activeRoom.isOnline ? 'Online' : 'Offline'}
+                <span className={`text-xs ${activeRoom?.isOnline ? 'text-emerald-400' : 'text-gray-500'}`}>
+                  {activeRoom?.isOnline ? 'Online' : 'Offline'}
                 </span>
               </div>
             </div>
@@ -224,9 +344,17 @@ export default function ChatPage() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-1">
-          {roomMessages.length > 0 ? (
-            roomMessages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} isOwn={msg.senderId === 'u1'} />
+          {!activeRoom ? (
+             <div className="h-full flex items-center justify-center">
+              <p className="text-gray-500">Pilih obrolan dari sebelah kiri</p>
+             </div>
+          ) : isLoadingMessages ? (
+            <div className="flex items-center justify-center h-full text-gray-400">
+              <Loader2 className="animate-spin w-8 h-8 mr-2" /> Memuat pesan...
+            </div>
+          ) : messages.length > 0 ? (
+            messages.map((msg) => (
+              <MessageBubble key={msg.id} message={msg} isOwn={msg.senderId === user?.id} />
             ))
           ) : (
             <div className="h-full flex items-center justify-center">
@@ -234,7 +362,7 @@ export default function ChatPage() {
                 <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Send size={32} className="text-gray-600" />
                 </div>
-                <p className="text-gray-400">Mulai percakapan dengan {activeRoom.buyerName}</p>
+                <p className="text-gray-400">Mulai percakapan dengan {activeRoom?.buyerName}</p>
                 <p className="text-gray-500 text-sm mt-1">Pesan akan diterjemahkan secara otomatis</p>
               </div>
             </div>
@@ -247,14 +375,15 @@ export default function ChatPage() {
             <div className="flex-1 relative">
               <input
                 type="text"
-                placeholder="Ketik pesan dalam Bahasa Indonesia..."
+                placeholder={`Ketik pesan / Type message ... (${sourceLang.toUpperCase()})`}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                className="input-field !pr-20"
+                disabled={!activeRoom}
+                className="input-field !pr-20 disabled:opacity-50"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
-                  🇮🇩 ID → 🇺🇸 EN
+                <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-full uppercase">
+                  {sourceLang} → {targetLang}
                 </span>
               </div>
             </div>

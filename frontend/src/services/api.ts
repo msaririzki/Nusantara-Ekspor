@@ -51,6 +51,7 @@ export interface RegisterData {
   full_name: string;
   company_name: string;
   role: 'umkm' | 'buyer';
+  country: string;
   phone?: string;
 }
 
@@ -63,6 +64,7 @@ export interface AuthResponse {
     full_name: string;
     company_name: string;
     role: string;
+    country: string;
     phone: string | null;
     address: string | null;
     is_active: boolean;
@@ -127,4 +129,14 @@ export const productsApi = {
 
   delete: (id: string, token: string) =>
     apiFetch<void>(`/api/products/${id}`, { method: 'DELETE', token }),
+};
+
+// ===== Chat B2B API =====
+
+export const chatApi = {
+  getRooms: (token: string) => 
+    apiFetch<unknown[]>('/api/chat/rooms', { method: 'GET', token }),
+    
+  getRoomMessages: (roomId: string, token: string) =>
+    apiFetch<unknown[]>(`/api/chat/${roomId}/messages`, { method: 'GET', token }),
 };

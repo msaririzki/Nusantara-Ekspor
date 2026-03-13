@@ -24,6 +24,7 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     company_name: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(10), nullable=False)  # 'umkm' or 'buyer'
+    country: Mapped[str] = mapped_column(String(100), default="Indonesia", server_default="Indonesia")
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     address: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

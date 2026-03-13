@@ -10,7 +10,8 @@ interface AuthUser {
   email: string;
   fullName: string;
   companyName: string;
-  role: 'umkm' | 'buyer';
+  role: 'umkm' | 'buyer' | 'admin';
+  country: string;
   phone: string | null;
 }
 
@@ -34,7 +35,8 @@ function mapUser(apiUser: AuthResponse['user']): AuthUser {
     email: apiUser.email,
     fullName: apiUser.full_name,
     companyName: apiUser.company_name,
-    role: apiUser.role as 'umkm' | 'buyer',
+    role: apiUser.role as 'umkm' | 'buyer' | 'admin',
+    country: apiUser.country,
     phone: apiUser.phone,
   };
 }
