@@ -2,17 +2,17 @@
 # Nusantara Ekspor - Chat Router (WebSocket)
 # ==========================================
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import select, or_, desc
 import json
 
-from database import get_db
+from database import get_db, SessionLocal
 from models.chat import ChatRoom, ChatMessage
 from models.user import User
 from schemas.chat import ChatRoomResponse, ChatMessageResponse, ChatMessageCreate, ChatRoomCreate
 from services.gemini_service import translate_text
 from utils.dependencies import get_current_user
-from sqlalchemy import select, or_, desc
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
@@ -45,9 +45,9 @@ manager = ConnectionManager()
 
 
 @router.get("/rooms", response_model=list[ChatRoomResponse])
-async def get_chat_rooms(
+def get_chat_rooms(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Get all chat rooms for the current user."""
     stmt = select(ChatRoom).where(
@@ -56,23 +56,20 @@ async def get_chat_rooms(
             ChatRoom.buyer_id == current_user.id
         )
     ).order_by(desc(ChatRoom.updated_at))
-    
-    result = await db.execute(stmt)
-    rooms = result.scalars().all()
-    
+
+    rooms = db.execute(stmt).scalars().all()
+
     if not rooms:
         return []
-        
+
     user_ids = {r.umkm_id for r in rooms} | {r.buyer_id for r in rooms}
-    users_stmt = select(User).where(User.id.in_(user_ids))
-    users_result = await db.execute(users_stmt)
-    user_map = {u.id: u for u in users_result.scalars().all()}
-    
+    user_map = {u.id: u for u in db.execute(select(User).where(User.id.in_(user_ids))).scalars().all()}
+
     response_rooms = []
     for r in rooms:
         other_id = r.buyer_id if current_user.id == r.umkm_id else r.umkm_id
         other_user = user_map.get(other_id)
-        
+
         response_rooms.append({
             "id": r.id,
             "umkm_id": r.umkm_id,
@@ -83,31 +80,29 @@ async def get_chat_rooms(
             "other_user_name": other_user.full_name if other_user else "Unknown",
             "other_user_country": other_user.country if other_user else "Unknown"
         })
-        
+
     return response_rooms
 
 
 @router.post("/rooms", response_model=ChatRoomResponse)
-async def create_chat_room(
+def create_chat_room(
     room_data: ChatRoomCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Create or get a chat room between a user and an UMKM."""
     buyer_id = current_user.id
     umkm_id = room_data.umkm_id
-    
-    # Optional: check if room already exists for this pair
+
     stmt = select(ChatRoom).where(
         ChatRoom.umkm_id == umkm_id,
         ChatRoom.buyer_id == buyer_id
     )
     if room_data.product_id:
         stmt = stmt.where(ChatRoom.product_id == room_data.product_id)
-        
-    result = await db.execute(stmt)
-    existing_room = result.scalars().first()
-    
+
+    existing_room = db.execute(stmt).scalars().first()
+
     if existing_room:
         room = existing_room
     else:
@@ -117,12 +112,11 @@ async def create_chat_room(
             product_id=room_data.product_id
         )
         db.add(room)
-        await db.flush()
-        await db.refresh(room)
-        
+        db.flush()
+        db.refresh(room)
+
     other_id = room.buyer_id if current_user.id == room.umkm_id else room.umkm_id
-    users_result = await db.execute(select(User).where(User.id == other_id))
-    other_user = users_result.scalars().first()
+    other_user = db.execute(select(User).where(User.id == other_id)).scalars().first()
 
     return {
         "id": room.id,
@@ -137,22 +131,19 @@ async def create_chat_room(
 
 
 @router.get("/{room_id}/messages", response_model=list[ChatMessageResponse])
-async def get_chat_messages(
+def get_chat_messages(
     room_id: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Get all messages for a specific chat room."""
-    # Verify user is part of the room
-    room_result = await db.execute(select(ChatRoom).where(ChatRoom.id == room_id))
-    room = room_result.scalar_one_or_none()
-    
+    room = db.execute(select(ChatRoom).where(ChatRoom.id == room_id)).scalar_one_or_none()
+
     if not room or (room.umkm_id != current_user.id and room.buyer_id != current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized to access this room")
-        
+
     stmt = select(ChatMessage).where(ChatMessage.room_id == room_id).order_by(ChatMessage.created_at.asc())
-    result = await db.execute(stmt)
-    return result.scalars().all()
+    return db.execute(stmt).scalars().all()
 
 
 @router.websocket("/ws/{room_id}")
@@ -173,12 +164,12 @@ async def websocket_chat(websocket: WebSocket, room_id: str):
             # Auto-translate using Gemini
             translated = await translate_text(original_message, source_lang, target_lang)
 
-            # NOTE: We can't easily inject a DB session into a websocket route's loop 
-            # without managing the lifecycle manually per message or using a new session block.
-            # We'll create a new session just for saving this message.
+            # Save message to DB using a sync session
+            msg_id = "temp-" + sender_id
+            created_at = None
             try:
-                from database import async_session
-                async with async_session() as session:
+                db = SessionLocal()
+                try:
                     new_msg = ChatMessage(
                         room_id=room_id,
                         sender_id=sender_id,
@@ -187,23 +178,25 @@ async def websocket_chat(websocket: WebSocket, room_id: str):
                         original_language=source_lang,
                         target_language=target_lang
                     )
-                    session.add(new_msg)
-                    
+                    db.add(new_msg)
+
                     # Update room's updated_at
-                    room_result = await session.execute(select(ChatRoom).where(ChatRoom.id == room_id))
-                    room = room_result.scalar_one_or_none()
+                    room = db.execute(select(ChatRoom).where(ChatRoom.id == room_id)).scalar_one_or_none()
                     if room:
-                        room.updated_at = func.now()
-                    
-                    await session.commit()
-                    await session.refresh(new_msg)
-                    
+                        from datetime import datetime, timezone
+                        room.updated_at = datetime.now(timezone.utc)
+
+                    db.commit()
+                    db.refresh(new_msg)
                     msg_id = new_msg.id
                     created_at = new_msg.created_at.isoformat() if new_msg.created_at else None
-            except Exception as db_err:
-                print(f"Error saving message to DB: {db_err}")
-                msg_id = "temp-" + sender_id
-                created_at = None
+                except Exception as db_err:
+                    db.rollback()
+                    print(f"Error saving message to DB: {db_err}")
+                finally:
+                    db.close()
+            except Exception as session_err:
+                print(f"Error creating DB session: {session_err}")
 
             response = {
                 "id": msg_id,

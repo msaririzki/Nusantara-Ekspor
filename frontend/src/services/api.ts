@@ -2,7 +2,8 @@
 // Nusantara Ekspor - API Service
 // ==========================================
 
-// Use relative path for API so it works across localhost, production, and tunnels via Vite proxy
+// Dev: Vite proxy forwards /api → backend (see vite.config.ts, VITE_API_TARGET)
+// Prod: request langsung ke domain yang sama (no CORS)
 const API_BASE_URL = '';
 
 interface ApiOptions {
@@ -107,23 +108,51 @@ export const aiApi = {
 
 // ===== Products API =====
 
+import type { Product } from '../types';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mapProduct = (data: any): Product => ({
+  id: data.id,
+  userId: data.user_id,
+  name: data.name,
+  description: data.description,
+  price: data.price,
+  currency: data.currency,
+  category: data.category,
+  images: data.images || [],
+  specifications: data.specifications || {},
+  minOrder: data.min_order,
+  stock: data.stock,
+  isActive: data.is_active,
+  createdAt: data.created_at,
+  updatedAt: data.updated_at,
+});
+
 export const productsApi = {
-  list: (params?: { query?: string; category?: string; sort_by?: string }) => {
+  list: async (params?: { query?: string; category?: string; sort_by?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.query) searchParams.set('query', params.query);
     if (params?.category) searchParams.set('category', params.category);
     if (params?.sort_by) searchParams.set('sort_by', params.sort_by);
     const qs = searchParams.toString();
-    return apiFetch<unknown[]>(`/api/products${qs ? `?${qs}` : ''}`);
+    const result = await apiFetch<any[]>(`/api/products${qs ? `?${qs}` : ''}`);
+    return result.map(mapProduct);
   },
 
-  get: (id: string) => apiFetch<unknown>(`/api/products/${id}`),
+  get: async (id: string) => {
+    const result = await apiFetch<any>(`/api/products/${id}`);
+    return mapProduct(result);
+  },
 
-  create: (data: unknown, token: string) =>
-    apiFetch<unknown>('/api/products', { method: 'POST', body: data, token }),
+  create: async (data: unknown, token: string) => {
+    const result = await apiFetch<any>('/api/products', { method: 'POST', body: data, token });
+    return mapProduct(result);
+  },
 
-  update: (id: string, data: unknown, token: string) =>
-    apiFetch<unknown>(`/api/products/${id}`, { method: 'PUT', body: data, token }),
+  update: async (id: string, data: unknown, token: string) => {
+    const result = await apiFetch<any>(`/api/products/${id}`, { method: 'PUT', body: data, token });
+    return mapProduct(result);
+  },
 
   delete: (id: string, token: string) =>
     apiFetch<void>(`/api/products/${id}`, { method: 'DELETE', token }),

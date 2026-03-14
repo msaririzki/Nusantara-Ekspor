@@ -2,7 +2,7 @@
 # Nusantara Ekspor - Auth Service
 # ==========================================
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
@@ -11,11 +11,10 @@ from schemas.user import UserCreate
 from utils.security import hash_password, verify_password, create_access_token
 
 
-async def register_user(db: AsyncSession, user_data: UserCreate) -> User:
+def register_user(db: Session, user_data: UserCreate) -> User:
     """Register a new user."""
     # Check if email already exists
-    result = await db.execute(select(User).where(User.email == user_data.email))
-    existing = result.scalar_one_or_none()
+    existing = db.execute(select(User).where(User.email == user_data.email)).scalar_one_or_none()
 
     if existing:
         raise HTTPException(
@@ -41,15 +40,14 @@ async def register_user(db: AsyncSession, user_data: UserCreate) -> User:
     )
 
     db.add(user)
-    await db.flush()
-    await db.refresh(user)
+    db.flush()
+    db.refresh(user)
     return user
 
 
-async def authenticate_user(db: AsyncSession, email: str, password: str) -> tuple[User, str]:
+def authenticate_user(db: Session, email: str, password: str) -> tuple[User, str]:
     """Authenticate a user and return user + JWT token."""
-    result = await db.execute(select(User).where(User.email == email))
-    user = result.scalar_one_or_none()
+    user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
 
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(

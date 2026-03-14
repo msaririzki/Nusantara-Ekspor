@@ -62,8 +62,7 @@ export default function DashboardPage() {
       price: product.price,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       category: product.category as any,
-      // API mengembalikan min_order dalam snake_case namun di map sebagai min_order oleh axios (secara eksplisit ts: any di product data)
-      minOrder: (product as any).min_order ?? product.minOrder ?? 1,
+      minOrder: product.minOrder || 1,
       stock: product.stock || 0,
       images: product.images || []
     });
@@ -90,7 +89,7 @@ export default function DashboardPage() {
       // Karena environment dev bergantung pada vite proxy untuk /uploads, dan di production ditaruh se-domain 
       // Kita langsung set formData dengan relative url (misal /uploads/...) .
       const safeUrl = res.url.startsWith('/') ? res.url : `/${res.url}`;
-      
+
       setFormData(prev => ({
         ...prev,
         images: [safeUrl]
@@ -114,7 +113,7 @@ export default function DashboardPage() {
         description: formData.description,
         price: formData.price,
         category: formData.category,
-        min_order: formData.minOrder,
+        min_order: formData.minOrder, // Backend masih expect snake_case saat Create/Update
         stock: formData.stock,
         images: formData.images,
         currency: 'IDR'
@@ -125,7 +124,7 @@ export default function DashboardPage() {
       } else {
         await productsApi.create(payload, token);
       }
-      
+
       setShowForm(false);
       setEditingProduct(null);
       fetchProducts(); // Refresh list
@@ -414,7 +413,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1.5">Gambar Produk (Max 1)</label>
-                  
+
                   {formData.images.length > 0 ? (
                     <div className="relative w-48 h-48 rounded-xl overflow-hidden mb-2 group">
                       <img src={formData.images[0]} alt="Preview" className="w-full h-full object-cover" />
@@ -430,7 +429,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   ) : (
-                    <div 
+                    <div
                       onClick={() => !uploadingImage && fileInputRef.current?.click()}
                       className={`border-2 border-dashed border-white/10 rounded-xl p-6 text-center transition-colors cursor-pointer ${uploadingImage ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500/30'}`}
                     >
@@ -443,7 +442,7 @@ export default function DashboardPage() {
                       <p className="text-gray-500 text-xs mt-1">PNG, JPG max 5MB</p>
                     </div>
                   )}
-                  
+
                   <input
                     type="file"
                     ref={fileInputRef}

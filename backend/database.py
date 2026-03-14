@@ -2,17 +2,44 @@
 # Nusantara Ekspor - Database Configuration
 # ==========================================
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 
 from config import settings
 
-# Database URL is expected to already include the correct async driver
-# e.g., sqlite+aiosqlite:///./db.sqlite or postgresql+asyncpg://...
+# Database URL must be set — use standard PostgreSQL format
+# Format: postgresql://user:password@db.<project>.supabase.co:5432/postgres
 db_url = settings.DATABASE_URL
 
-engine = create_async_engine(db_url, echo=settings.DEBUG)
-async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+if not db_url:
+    raise RuntimeError(
+        "DATABASE_URL belum diisi di backend/.env!\n"
+        "Contoh SQLite   : sqlite:///./db.sqlite\n"
+        "Contoh Supabase : postgresql://postgres:<password>@db.<project>.supabase.co:5432/postgres"
+    )
+
+# Normalise asyncpg prefix → plain psycopg2 (jika ada sisa URL asyncpg)
+if db_url.startswith("postgresql+asyncpg://"):
+    db_url = db_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+# Engine args — SQLite perlu check_same_thread=False
+is_sqlite = db_url.startswith("sqlite")
+connect_args = {"check_same_thread": False} if is_sqlite else {}
+
+engine = create_engine(
+    db_url,
+    echo=settings.DEBUG,
+    connect_args=connect_args,
+    # Connection pool settings (skip for SQLite yang tidak support pool)
+    **({} if is_sqlite else {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "pool_size": 5,
+        "max_overflow": 10,
+    })
+)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
@@ -20,18 +47,19 @@ class Base(DeclarativeBase):
     pass
 
 
-async def get_db():
-    """Dependency to get database session."""
-    async with async_session() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
+def get_db():
+    """Dependency to get database session (sync — FastAPI runs in thread pool)."""
+    db: Session = SessionLocal()
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 
-async def init_db():
-    """Initialize database tables."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+def init_db():
+    """Initialize database tables (sync)."""
+    Base.metadata.create_all(bind=engine)

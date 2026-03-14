@@ -2,14 +2,13 @@
 # Nusantara Ekspor - FastAPI Main Application
 # ==========================================
 
-import os
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from config import settings
 from database import init_db
@@ -20,8 +19,14 @@ from routers import auth, products, ai, chat
 async def lifespan(app: FastAPI):
     """Application lifespan: initialize resources on startup."""
     print("🚀 Nusantara Ekspor Backend starting up...")
-    await init_db()
-    print("✅ Database initialized")
+    try:
+        import asyncio
+        await asyncio.get_event_loop().run_in_executor(None, init_db)
+        print("✅ Database initialized")
+    except Exception as e:
+        print(f"⚠️  Database connection failed at startup: {e}")
+        print("   → Pastikan project Supabase tidak paused: https://supabase.com/dashboard")
+        print("   → App tetap berjalan, request ke DB akan gagal hingga koneksi pulih.")
     yield
     print("👋 Nusantara Ekspor Backend shutting down...")
 
@@ -49,6 +54,45 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount uploads directory untuk local file storage
+upload_dir = Path("uploads")
+upload_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# Global exception handler — kembalikan detail error ke frontend
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    exc_name = type(exc).__name__
+    exc_str = str(exc)
+
+    # Tangkap error koneksi database (psycopg2 / SQLAlchemy)
+    is_db_error = any(keyword in exc_str for keyword in [
+        "getaddrinfo", "could not translate host", "Connection refused",
+        "connection failed", "psycopg2", "OperationalError", "could not connect"
+    ])
+    if is_db_error:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "Database tidak bisa diakses. Pastikan project Supabase tidak paused di https://supabase.com/dashboard",
+                "error": exc_name,
+            }
+        )
+
+    # Re-raise HTTPException tetap dengan status aslinya
+    from fastapi import HTTPException as FastAPIHTTPException
+    if isinstance(exc, FastAPIHTTPException):
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    # Fallback: log detail error di server
+    import traceback
+    print(f"[ERROR] Unhandled exception: {exc_name}: {exc_str}")
+    print(traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {exc_name} - {exc_str}"}
+    )
+
 # Include API routers
 app.include_router(auth.router)
 app.include_router(products.router)
@@ -62,12 +106,8 @@ async def health_check():
     return {"status": "healthy", "name": settings.APP_NAME, "version": settings.APP_VERSION}
 
 
-# ==========================================
-# Serve Uploaded Media Files
-# ==========================================
-uploads_dir = Path(__file__).parent / "uploads"
-uploads_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+# Catatan: Upload gambar produk sekarang menggunakan Supabase Storage.
+# Tidak perlu mount /uploads karena file disimpan di cloud Supabase.
 
 
 # ==========================================
@@ -107,3 +147,8 @@ else:
             "message": "🇮🇩 Nusantara Ekspor API — Bawa Produk Kebanggaanmu Mendunia!",
             "frontend": "Build frontend terlebih dahulu: cd frontend && npm run build",
         }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=3000, reload=True)

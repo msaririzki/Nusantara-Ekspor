@@ -3,10 +3,8 @@
 # ==========================================
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
-import shutil
-import uuid
+from sqlalchemy.orm import Session
+from sqlalchemy import select, or_
 from pathlib import Path
 
 from database import get_db
@@ -19,7 +17,7 @@ router = APIRouter(prefix="/api/products", tags=["Products"])
 
 
 @router.get("", response_model=list[ProductResponse])
-async def list_products(
+def list_products(
     query: str | None = Query(None, description="Search query"),
     category: str | None = Query(None, description="Filter by category"),
     min_price: float | None = Query(None, ge=0),
@@ -27,7 +25,7 @@ async def list_products(
     sort_by: str = Query("newest", regex="^(newest|price-low|price-high)$"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """List all active products with search, filter, and sorting."""
     stmt = select(Product).where(Product.is_active == True)
@@ -63,15 +61,14 @@ async def list_products(
     offset = (page - 1) * per_page
     stmt = stmt.offset(offset).limit(per_page)
 
-    result = await db.execute(stmt)
+    result = db.execute(stmt)
     return result.scalars().all()
 
 
 @router.get("/{product_id}", response_model=ProductResponse)
-async def get_product(product_id: str, db: AsyncSession = Depends(get_db)):
+def get_product(product_id: str, db: Session = Depends(get_db)):
     """Get a single product by ID."""
-    result = await db.execute(select(Product).where(Product.id == product_id))
-    product = result.scalar_one_or_none()
+    product = db.execute(select(Product).where(Product.id == product_id)).scalar_one_or_none()
 
     if not product:
         raise HTTPException(
@@ -82,17 +79,13 @@ async def get_product(product_id: str, db: AsyncSession = Depends(get_db)):
     return product
 
 
-# Upload directory
-UPLOAD_DIR = Path(__file__).parent.parent / "uploads" / "products"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
 
 @router.post("/upload-image")
 async def upload_product_image(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
-    """Upload a product image and return its URL (UMKM only)."""
+    """Upload a product image to local storage and return its URL (UMKM only)."""
     if current_user.role != "umkm":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -108,33 +101,40 @@ async def upload_product_image(
             detail=f"Format file tidak didukung. Gunakan: {', '.join(allowed_extensions)}",
         )
 
-    # Generate unique filename
+    # Upload ke local folder 'uploads'
+    import uuid
+    import shutil
+    import os
+    
     unique_filename = f"{uuid.uuid4()}{ext}"
-    file_path = UPLOAD_DIR / unique_filename
-
-    # Save file
+    upload_dir = Path("uploads")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    file_path = upload_dir / unique_filename
+    
     try:
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+        
+        # Kembalikan URL relatif yang akan dilayani oleh backend /uploads mount
+        image_url = f"/uploads/{unique_filename}"
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Gagal menyimpan file: {str(e)}",
+            detail=f"Gagal menyimpan gambar: {str(e)}",
         )
     finally:
-        file.file.close()
+        await file.close()
 
-    # Return public URL path
-    # Akan diakses oleh frontend melalui /uploads/products/filename.jpg
-    image_url = f"/uploads/products/{unique_filename}"
     return {"url": image_url}
 
 
+
 @router.post("", response_model=ProductResponse, status_code=201)
-async def create_product(
+def create_product(
     product_data: ProductCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """Create a new product (UMKM only)."""
     if current_user.role != "umkm":
@@ -157,23 +157,22 @@ async def create_product(
     )
 
     db.add(product)
-    await db.flush()
-    await db.refresh(product)
+    db.flush()
+    db.refresh(product)
     return product
 
 
 @router.put("/{product_id}", response_model=ProductResponse)
-async def update_product(
+def update_product(
     product_id: str,
     product_data: ProductUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """Update a product (owner only)."""
-    result = await db.execute(
+    product = db.execute(
         select(Product).where(Product.id == product_id, Product.user_id == current_user.id)
-    )
-    product = result.scalar_one_or_none()
+    ).scalar_one_or_none()
 
     if not product:
         raise HTTPException(
@@ -185,22 +184,21 @@ async def update_product(
     for key, value in update_data.items():
         setattr(product, key, value)
 
-    await db.flush()
-    await db.refresh(product)
+    db.flush()
+    db.refresh(product)
     return product
 
 
 @router.delete("/{product_id}", status_code=204)
-async def delete_product(
+def delete_product(
     product_id: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """Delete a product (owner only)."""
-    result = await db.execute(
+    product = db.execute(
         select(Product).where(Product.id == product_id, Product.user_id == current_user.id)
-    )
-    product = result.scalar_one_or_none()
+    ).scalar_one_or_none()
 
     if not product:
         raise HTTPException(
@@ -208,4 +206,4 @@ async def delete_product(
             detail="Produk tidak ditemukan atau Anda bukan pemiliknya",
         )
 
-    await db.delete(product)
+    db.delete(product)
