@@ -19,7 +19,7 @@ const mockProducts: Product[] = [
     price: 150000,
     currency: 'IDR',
     category: 'Hortikultura',
-    images: ['https://via.placeholder.com/300'],
+    images: ['https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSjGeLpgCpt2R9CVDyRBWWeS_Do5LHfSIgKA&s'], // [FIXED] Gambar Batik Tradisional
     specifications: {},
     minOrder: 1,
     stock: 10,
@@ -37,7 +37,7 @@ const mockProducts: Product[] = [
     price: 75000,
     currency: 'IDR',
     category: 'Perkebunan',
-    images: ['https://via.placeholder.com/300'],
+    images: ['https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=500&q=80'], // Gambar Kopi
     specifications: {},
     minOrder: 1,
     stock: 20,
@@ -55,7 +55,7 @@ const mockProducts: Product[] = [
     price: 200000,
     currency: 'IDR',
     category: 'Hortikultura',
-    images: ['https://via.placeholder.com/300'],
+    images: ['https://images.unsplash.com/photo-1528458909336-e7a0adfed0a5?auto=format&fit=crop&w=500&q=80'], // Gambar Tenun
     specifications: {},
     minOrder: 1,
     stock: 5,
@@ -73,7 +73,7 @@ const mockProducts: Product[] = [
     price: 50000,
     currency: 'IDR',
     category: 'Perkebunan',
-    images: ['https://via.placeholder.com/300'],
+    images: ['https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRO9gdlzmGyQFmdRhIO3yH35-CDeJHyRTGZJA&s'], // [FIXED] Gambar Toples Madu
     specifications: {},
     minOrder: 1,
     stock: 15,
