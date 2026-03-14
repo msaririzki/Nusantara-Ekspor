@@ -41,21 +41,9 @@ if [ ! -f backend/data/db.sqlite ] && [ -f backend/db.sqlite ]; then
     cp backend/db.sqlite backend/data/db.sqlite
 fi
 
-# 4. Hentikan container lama yang berjalan
-echo "🛑 Menghentikan layanan yang sedang berjalan (jika ada)..."
-docker compose down
-
-# 5. Membersihkan cache Docker (opsional, uncomment jika RAM server sering penuh)
-# echo "🧹 Membersihkan cache docker tak terpakai..."
-# docker system prune -f
-
-# 6. Membangun ulang image Docker dan Frontend (Vite)
-echo "🏗️ Membangun ulang aplikasi & menginstal dependensi terbaru..."
-docker compose build --no-cache
-
-# 7. Menjalankan Docker Background Mode (Daemon)
-echo "⚡ Menjalankan layanan secara background..."
-docker compose up -d
+# 4. Membangun ulang dan me-restart container secara efisien
+echo "🏗️ Memperbarui aplikasi menggunakan Docker Cache..."
+docker compose up --build -d
 
 # 8. Menambahkan migrasi database baru (jika tidak ter-cover di entrypoint / skrip setup)
 echo "🗃️ Menerapkan migrasi database terkini (kolom reset password)..."
