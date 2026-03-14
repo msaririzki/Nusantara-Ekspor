@@ -16,8 +16,8 @@ class Settings:
     APP_VERSION: str = os.getenv("APP_VERSION", "1.0.0")
     DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
 
-    # Database (Supabase PostgreSQL — wajib set di .env)
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+    # Database (SQLite wajib diset di .env)
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./db.sqlite")
 
     # JWT
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
@@ -28,11 +28,6 @@ class Settings:
 
     # Gemini AI
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-
-    # Supabase Storage
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
-    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
-    SUPABASE_BUCKET: str = os.getenv("SUPABASE_BUCKET", "products")
 
     # CORS
     CORS_ORIGINS: list[str] = os.getenv(

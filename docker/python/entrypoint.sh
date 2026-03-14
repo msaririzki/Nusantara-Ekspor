@@ -9,24 +9,32 @@ if [ ! -s /app/backend/.env ]; then
     cp /app/backend/.env.example /app/backend/.env
 fi
 
-# 2. Populate frontend dist volume (jika masih kosong)
-if [ ! -f /usr/share/nginx/html/index.html ] && [ -d /frontend-dist-init ]; then
-    echo "==> [Entrypoint] Menyalin file frontend ke volume bersama..."
-    cp -r /frontend-dist-init/. /usr/share/nginx/html/
+# 2. Populate frontend dist volume (hanya jika direktori target sudah di-mount)
+# Volume frontend-dist dibagi dengan container nginx, bukan selalu ada di sini
+NGINX_HTML="/usr/share/nginx/html"
+if [ -d "$NGINX_HTML" ] && [ -d /frontend-dist-init ]; then
+    echo "==> [Entrypoint] Menyalin (overwrite) file frontend ke volume bersama..."
+    cp -r /frontend-dist-init/. "$NGINX_HTML/"
+else
+    echo "==> [Entrypoint] Melewati copy frontend (volume nginx tidak di-mount di sini)."
 fi
 
-# 3. Pastikan frontend dist juga ada di path yang diharapkan backend
+# 3. Pastikan frontend dist juga ada di path yang diharapkan backend (untuk SPA serve)
 if [ ! -d /app/frontend/dist/assets ] && [ -d /frontend-dist-init ]; then
     echo "==> [Entrypoint] Menyalin frontend dist ke path backend..."
+    mkdir -p /app/frontend/dist
     cp -r /frontend-dist-init/. /app/frontend/dist/
 fi
 
-# 4. Inisialisasi database (create tables)
+# 4. Pastikan folder data tersedia untuk SQLite
+mkdir -p /app/backend/data
+mkdir -p /app/backend/uploads
+
+# 5. Inisialisasi database (create tables)
 echo "==> [Entrypoint] Menginisialisasi database..."
 python -c "
-import asyncio
 from database import init_db
-asyncio.run(init_db())
+init_db()
 print('==> [Entrypoint] Database siap!')
 "
 

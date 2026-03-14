@@ -7,20 +7,14 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 
 from config import settings
 
-# Database URL must be set — use standard PostgreSQL format
-# Format: postgresql://user:password@db.<project>.supabase.co:5432/postgres
+# Database URL must be set
 db_url = settings.DATABASE_URL
 
 if not db_url:
     raise RuntimeError(
         "DATABASE_URL belum diisi di backend/.env!\n"
-        "Contoh SQLite   : sqlite:///./db.sqlite\n"
-        "Contoh Supabase : postgresql://postgres:<password>@db.<project>.supabase.co:5432/postgres"
+        "Contoh SQLite   : sqlite:///./db.sqlite"
     )
-
-# Normalise asyncpg prefix → plain psycopg2 (jika ada sisa URL asyncpg)
-if db_url.startswith("postgresql+asyncpg://"):
-    db_url = db_url.replace("postgresql+asyncpg://", "postgresql://", 1)
 
 # Engine args — SQLite perlu check_same_thread=False
 is_sqlite = db_url.startswith("sqlite")

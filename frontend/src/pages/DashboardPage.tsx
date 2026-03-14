@@ -7,7 +7,7 @@ import {
   Package, Eye, MessageSquare, TrendingUp, Plus, Edit3, Trash2,
   BarChart3, ArrowUpRight, DollarSign, X, Save, Image as ImageIcon, Loader2
 } from 'lucide-react';
-import { dummyDashboardStats, formatCurrency, productCategories } from '../data/dummy';
+import { formatCurrency, productCategories } from '../data/dummy';
 import type { Product, ProductCategory } from '../types';
 import { productsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -21,7 +21,6 @@ export default function DashboardPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const stats = dummyDashboardStats;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -80,22 +79,24 @@ export default function DashboardPage() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !token) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length || !token) return;
 
     try {
       setUploadingImage(true);
-      const res = await productsApi.uploadImage(file, token);
-      // Karena environment dev bergantung pada vite proxy untuk /uploads, dan di production ditaruh se-domain 
-      // Kita langsung set formData dengan relative url (misal /uploads/...) .
-      const safeUrl = res.url.startsWith('/') ? res.url : `/${res.url}`;
+      const newImages: string[] = [];
+      for (const file of files) {
+        const res = await productsApi.uploadImage(file, token);
+        const safeUrl = res.url.startsWith('/') ? res.url : `/${res.url}`;
+        newImages.push(safeUrl);
+      }
 
       setFormData(prev => ({
         ...prev,
-        images: [safeUrl]
+        images: [...prev.images, ...newImages].slice(0, 5)
       }));
     } catch (error) {
-      alert('Gagal mengupload gambar. Pastikan format JPG/PNG dan ukuran maksimal 5MB.');
+      alert('Gagal mengupload gambar. Pastikan format JPG/PNG dan ukuran maksimal file tidak terlalu besar.');
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -164,31 +165,31 @@ export default function DashboardPage() {
             {
               icon: Package,
               label: 'Total Produk',
-              value: stats.totalProducts.toString(),
+              value: products.length.toString(),
               color: 'text-blue-400',
               bgColor: 'from-blue-500 to-blue-600',
             },
             {
               icon: Eye,
               label: 'Total Views',
-              value: stats.totalViews.toLocaleString('id-ID'),
+              value: '0',
               color: 'text-purple-400',
               bgColor: 'from-purple-500 to-purple-600',
             },
             {
               icon: MessageSquare,
               label: 'Inquiries',
-              value: stats.totalInquiries.toString(),
+              value: '0',
               color: 'text-emerald-400',
               bgColor: 'from-emerald-500 to-emerald-600',
             },
             {
               icon: DollarSign,
               label: 'Pendapatan',
-              value: formatCurrency(stats.totalRevenue),
+              value: formatCurrency(0),
               color: 'text-amber-400',
               bgColor: 'from-amber-500 to-amber-600',
-              extra: `+${stats.monthlyGrowth}%`,
+              extra: `+0%`,
             },
           ].map(({ icon: Icon, label, value, color, bgColor, extra }) => (
             <div key={label} className="glass-card p-6 group hover:bg-white/10 transition-all duration-300">
@@ -218,15 +219,15 @@ export default function DashboardPage() {
             </h2>
             <span className="badge-blue">
               <TrendingUp size={12} className="mr-1" />
-              +{stats.monthlyGrowth}% bulan ini
+              +0% bulan ini
             </span>
           </div>
           <div className="flex items-end gap-2 h-32">
-            {[35, 45, 30, 55, 40, 65, 50, 70, 60, 80, 75, 90].map((height, i) => (
+            {[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].map((height, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
                 <div
                   className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-md transition-all duration-500 hover:from-blue-500 hover:to-blue-300 cursor-pointer"
-                  style={{ height: `${height}%` }}
+                  style={{ height: `${height === 0 ? 5 : height}%`, opacity: height === 0 ? 0.3 : 1 }}
                 />
                 <span className="text-[10px] text-gray-500">
                   {['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][i]}
@@ -364,12 +365,18 @@ export default function DashboardPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1.5">Harga (IDR)</label>
                     <input
-                      type="number"
+                      type="text"
                       required
-                      min={0}
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                      value={formData.price === 0 ? '' : formData.price.toLocaleString('id-ID')}
+                      onChange={(e) => {
+                        // Hanya ambil angka
+                        const rawContent = e.target.value.replace(/\D/g, '');
+                        // Parse ke int
+                        const numericValue = parseInt(rawContent, 10) || 0;
+                        setFormData({ ...formData, price: numericValue });
+                      }}
                       className="input-field"
+                      placeholder="0"
                     />
                   </div>
                   <div>
@@ -378,11 +385,11 @@ export default function DashboardPage() {
                       required
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value as ProductCategory })}
-                      className="input-field"
+                      className="input-field appearance-none"
                     >
-                      <option value="">Pilih Kategori</option>
+                      <option value="" className="bg-gray-800 text-white">Pilih Kategori</option>
                       {productCategories.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
+                        <option key={cat} value={cat} className="bg-gray-800 text-white">{cat}</option>
                       ))}
                     </select>
                   </div>
@@ -394,8 +401,8 @@ export default function DashboardPage() {
                       type="number"
                       required
                       min={1}
-                      value={formData.minOrder}
-                      onChange={(e) => setFormData({ ...formData, minOrder: Number(e.target.value) })}
+                      value={formData.minOrder.toString().replace(/^0+/, '')}
+                      onChange={(e) => setFormData({ ...formData, minOrder: Math.max(1, parseInt(e.target.value) || 0) })}
                       className="input-field"
                     />
                   </div>
@@ -405,46 +412,57 @@ export default function DashboardPage() {
                       type="number"
                       required
                       min={0}
-                      value={formData.stock}
-                      onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
+                      value={formData.stock.toString().replace(/^0+/, '') || (formData.stock === 0 ? '0' : '')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setFormData({ ...formData, stock: 0 });
+                        } else {
+                          setFormData({ ...formData, stock: parseInt(val, 10) || 0 });
+                        }
+                      }}
                       className="input-field"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Gambar Produk (Max 1)</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Gambar Produk (Max 5)</label>
 
-                  {formData.images.length > 0 ? (
-                    <div className="relative w-48 h-48 rounded-xl overflow-hidden mb-2 group">
-                      <img src={formData.images[0]} alt="Preview" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button
-                          type="button"
-                          onClick={() => setFormData({ ...formData, images: [] })}
-                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
-                          title="Hapus Gambar"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-2">
+                    {formData.images.map((img, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group border border-white/10">
+                        <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }))}
+                            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
+                            title="Hapus Gambar"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => !uploadingImage && fileInputRef.current?.click()}
-                      className={`border-2 border-dashed border-white/10 rounded-xl p-6 text-center transition-colors cursor-pointer ${uploadingImage ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500/30'}`}
-                    >
-                      {uploadingImage ? (
-                        <Loader2 size={32} className="text-blue-500 mx-auto mb-2 animate-spin" />
-                      ) : (
-                        <ImageIcon size={32} className="text-gray-500 mx-auto mb-2" />
-                      )}
-                      <p className="text-gray-400 text-sm">{uploadingImage ? 'Mengunggah...' : 'Klik untuk upload gambar'}</p>
-                      <p className="text-gray-500 text-xs mt-1">PNG, JPG max 5MB</p>
-                    </div>
-                  )}
+                    ))}
+                    
+                    {formData.images.length < 5 && (
+                      <div
+                        onClick={() => !uploadingImage && fileInputRef.current?.click()}
+                        className={`aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center transition-colors cursor-pointer ${uploadingImage ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500/30 bg-white/5 hover:bg-white/10'}`}
+                      >
+                        {uploadingImage ? (
+                          <Loader2 size={24} className="text-blue-500 mb-2 animate-spin" />
+                        ) : (
+                          <ImageIcon size={24} className="text-gray-500 mb-2" />
+                        )}
+                        <span className="text-gray-400 text-xs text-center px-2">{uploadingImage ? 'Mengunggah...' : 'Klik untuk tambah gambar'}</span>
+                      </div>
+                    )}
+                  </div>
 
                   <input
                     type="file"
+                    multiple
                     ref={fileInputRef}
                     onChange={handleImageUpload}
                     accept="image/png, image/jpeg, image/webp"

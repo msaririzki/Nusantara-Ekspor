@@ -25,7 +25,6 @@ async def lifespan(app: FastAPI):
         print("✅ Database initialized")
     except Exception as e:
         print(f"⚠️  Database connection failed at startup: {e}")
-        print("   → Pastikan project Supabase tidak paused: https://supabase.com/dashboard")
         print("   → App tetap berjalan, request ke DB akan gagal hingga koneksi pulih.")
     yield
     print("👋 Nusantara Ekspor Backend shutting down...")
@@ -74,7 +73,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
         return JSONResponse(
             status_code=503,
             content={
-                "detail": "Database tidak bisa diakses. Pastikan project Supabase tidak paused di https://supabase.com/dashboard",
+                "detail": "Database tidak bisa diakses.",
                 "error": exc_name,
             }
         )
@@ -106,8 +105,8 @@ async def health_check():
     return {"status": "healthy", "name": settings.APP_NAME, "version": settings.APP_VERSION}
 
 
-# Catatan: Upload gambar produk sekarang menggunakan Supabase Storage.
-# Tidak perlu mount /uploads karena file disimpan di cloud Supabase.
+# Menerima file upload lokal sudah di-setup pada endpoint terkait
+
 
 
 # ==========================================

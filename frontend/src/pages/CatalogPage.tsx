@@ -196,17 +196,7 @@ export default function CatalogPage() {
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-white/5 flex-shrink-0">
-                  {product.images && product.images.length > 0 ? (
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ImageIcon size={48} className="text-gray-600" />
-                    </div>
-                  )}
+                  <ProductImageCarousel images={product.images || []} name={product.name} />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
                   <span className="absolute top-3 left-3 badge-blue text-[10px]">
                     {product.category}
@@ -256,6 +246,54 @@ export default function CatalogPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ProductImageCarousel({ images, name }: { images: string[], name: string }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (!images || images.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 4000); // Ganti gambar setiap 4 detik
+    return () => clearInterval(interval);
+  }, [images]);
+
+  if (!images || images.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <ImageIcon size={48} className="text-gray-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full relative">
+      {images.map((img, i) => (
+        <img
+          key={img}
+          src={img}
+          alt={`${name} - ${i + 1}`}
+          className={`absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-all duration-1000 ease-in-out ${
+            i === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
+          }`}
+        />
+      ))}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent z-20 pointer-events-none" />
+      {images.length > 1 && (
+        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-30">
+          {images.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-500 shadow-sm ${
+                i === currentIndex ? 'w-5 bg-blue-400' : 'w-2 bg-white/40'
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

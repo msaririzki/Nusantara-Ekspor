@@ -101,10 +101,11 @@ async def upload_product_image(
             detail=f"Format file tidak didukung. Gunakan: {', '.join(allowed_extensions)}",
         )
 
-    # Upload ke local folder 'uploads'
+    # Upload dan kompresi ke local folder 'uploads'
     import uuid
-    import shutil
     import os
+    from io import BytesIO
+    from PIL import Image
     
     unique_filename = f"{uuid.uuid4()}{ext}"
     upload_dir = Path("uploads")
@@ -113,15 +114,28 @@ async def upload_product_image(
     file_path = upload_dir / unique_filename
     
     try:
-        with file_path.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # Buka gambar menggunakan Pillow
+        image_data = await file.read()
+        Image.MAX_IMAGE_PIXELS = None # Matikan limit dekompresi bom 
+        image = Image.open(BytesIO(image_data))
+        
+        # Konversi ke RGB jika format gambar adalah RGBA (png dengan transparan kadang bermasalah jika disave ke jpeg)
+        if image.mode in ("RGBA", "P"):
+            image = image.convert("RGB")
+            
+        # Resize gambar jika terlalu besar (maks 1080p)
+        image.thumbnail((1920, 1080), Image.Resampling.LANCZOS)
+        
+        # Simpan dengan kompresi
+        # Format webp sangat efisien, meskipun asalnya png/jpg
+        image.save(file_path, optimize=True, quality=80)
         
         # Kembalikan URL relatif yang akan dilayani oleh backend /uploads mount
         image_url = f"/uploads/{unique_filename}"
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Gagal menyimpan gambar: {str(e)}",
+            detail=f"Gagal menyimpan atau mengompresi gambar: {str(e)}",
         )
     finally:
         await file.close()

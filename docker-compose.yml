@@ -18,7 +18,14 @@ services:
       - ./backend/models:/app/backend/models:ro
       - ./backend/schemas:/app/backend/schemas:ro
       - ./backend/services:/app/backend/services:ro
-      - ./backend/utils:/app/backend/utils:ro
+      # Persist SQLite & uploaded images (bind mount agar data tetap di host)
+      - ./backend/data:/app/backend/data
+      - uploads-data:/app/backend/uploads
+      # Share volume dengan nginx untuk membagikan file statis UI
+      - frontend-dist:/usr/share/nginx/html
+    environment:
+      # Override DATABASE_URL ke folder data yang persistent
+      DATABASE_URL: sqlite:////app/backend/data/db.sqlite
     restart: unless-stopped
 
   web:
@@ -34,3 +41,4 @@ services:
 
 volumes:
   frontend-dist:
+  uploads-data:

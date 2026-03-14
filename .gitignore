@@ -11,6 +11,8 @@ backend/**/__pycache__/
 
 # Database
 backend/*.db
+backend/*.sqlite
+backend/data/
 
 # Environment
 .env

@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           ws: true,
         },
-        // Proxy gambar produk (kini ke local backend karena Supabase dimatikan)
+        // Proxy gambar produk ke local backend
         '/uploads': {
           target: apiTarget,
           changeOrigin: true,

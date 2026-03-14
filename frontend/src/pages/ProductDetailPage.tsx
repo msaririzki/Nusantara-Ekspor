@@ -6,7 +6,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Star, MapPin, Package, ShieldCheck, MessageSquare,
-  Share2, Heart, Truck, Clock, CheckCircle2, Loader2, Image as ImageIcon
+  Share2, Heart, Truck, Clock, CheckCircle2, Loader2, Image as ImageIcon,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { formatCurrency } from '../data/dummy';
 import { productsApi, chatApi } from '../services/api';
@@ -20,6 +21,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const handleContactSeller = async () => {
     if (!token || !user) {
@@ -109,25 +111,43 @@ export default function ProductDetailPage() {
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Product Image */}
           <div>
-            <div className="glass-card overflow-hidden">
-              <div className="aspect-square relative bg-white/5">
+            <div className="glass-card overflow-hidden mb-4">
+              <div className="aspect-square relative bg-white/5 group">
                 {product.images && product.images.length > 0 ? (
-                  <img
-                    src={product.images[0]}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    <img
+                      src={product.images[currentImageIndex]}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-all duration-300"
+                    />
+                    {product.images.length > 1 && (
+                      <>
+                        <button 
+                          onClick={() => setCurrentImageIndex(prev => prev === 0 ? product.images.length - 1 : prev - 1)}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        >
+                          <ChevronLeft size={20} />
+                        </button>
+                        <button 
+                          onClick={() => setCurrentImageIndex(prev => prev === product.images.length - 1 ? 0 : prev + 1)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        >
+                          <ChevronRight size={20} />
+                        </button>
+                      </>
+                    )}
+                  </>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
                     <ImageIcon size={64} className="mb-4 opacity-50" />
                     <span>Tidak ada gambar</span>
                   </div>
                 )}
-                <div className="absolute top-4 left-4 flex gap-2">
+                <div className="absolute top-4 left-4 flex gap-2 z-10">
                   <span className="badge-blue">{product.category}</span>
                   {product.isActive && <span className="badge-emerald">Aktif</span>}
                 </div>
-                <div className="absolute top-4 right-4 flex gap-2">
+                <div className="absolute top-4 right-4 flex gap-2 z-10">
                   <button className="w-10 h-10 glass-card flex items-center justify-center hover:bg-white/20 transition-colors rounded-xl">
                     <Heart size={18} className="text-white" />
                   </button>
@@ -137,6 +157,23 @@ export default function ProductDetailPage() {
                 </div>
               </div>
             </div>
+
+            {/* Thumbnails */}
+            {product.images && product.images.length > 1 && (
+              <div className="grid grid-cols-5 gap-3">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                      currentImageIndex === idx ? 'border-blue-500 scale-105' : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
