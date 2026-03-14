@@ -34,6 +34,13 @@ if [ ! -f backend/.env ]; then
     fi
 fi
 
+# 3.5 Menggunakan database bawaan Github jika fresh install
+mkdir -p backend/data
+if [ ! -f backend/data/db.sqlite ] && [ -f backend/db.sqlite ]; then
+    echo "📂 Menginisialisasi data volume dengan database bawaan Git..."
+    cp backend/db.sqlite backend/data/db.sqlite
+fi
+
 # 4. Hentikan container lama yang berjalan
 echo "🛑 Menghentikan layanan yang sedang berjalan (jika ada)..."
 docker compose down
