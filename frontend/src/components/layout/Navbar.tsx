@@ -45,19 +45,16 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-emerald-500 transform group-hover:scale-110 transition-transform duration-500"></div>
-              <div className="absolute inset-[2px] bg-slate-900 rounded-[10px] flex items-center justify-center">
-                <span className="text-transparent bg-clip-text bg-gradient-to-br from-blue-400 to-emerald-400 font-bold text-xl group-hover:scale-110 transition-transform duration-300">N</span>
-              </div>
-            </div>
+            <img src="/logo.png" alt="Nusra Ekspor" className="h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
             <div className="flex flex-col">
+              <div className="flex flex-col">
               <span className="text-lg font-bold font-display text-white tracking-tight group-hover:text-blue-400 transition-colors duration-300">
-                Nusantara
+                Nusra
               </span>
               <span className="text-[10px] font-medium text-emerald-400 -mt-1 tracking-widest uppercase">
                 Ekspor
               </span>
+            </div>
             </div>
           </Link>
 
@@ -69,11 +66,10 @@ export default function Navbar() {
                 <Link
                   key={path}
                   to={path}
-                  className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 overflow-hidden group ${
-                    active
+                  className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 overflow-hidden group ${active
                       ? 'text-white shadow-lg'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
+                    }`}
                 >
                   {active && (
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600/80 to-emerald-600/80 rounded-xl" />
@@ -119,8 +115,8 @@ export default function Navbar() {
                   <LogIn size={16} />
                   Masuk
                 </Link>
-                <Link 
-                  to="/register" 
+                <Link
+                  to="/register"
                   className="relative group px-5 py-2.5 rounded-xl overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-emerald-600 transition-transform duration-300 group-hover:scale-105"></div>
@@ -141,10 +137,9 @@ export default function Navbar() {
       </div>
 
       {/* Mobile Menu */}
-      <div 
-        className={`lg:hidden transition-all duration-300 overflow-hidden ${
-          isMobileMenuOpen ? 'max-h-screen border-t border-white/10 opacity-100' : 'max-h-0 opacity-0'
-        }`}
+      <div
+        className={`lg:hidden transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? 'max-h-screen border-t border-white/10 opacity-100' : 'max-h-0 opacity-0'
+          }`}
       >
         <div className="px-4 py-4 space-y-2 bg-slate-900/95">
           {visibleLinks.map(({ path, label, icon: Icon }) => {
@@ -154,18 +149,17 @@ export default function Navbar() {
                 key={path}
                 to={path}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  active
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${active
                     ? 'bg-gradient-to-r from-blue-600/50 to-emerald-600/50 text-white border border-white/10 shadow-lg'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
+                  }`}
               >
                 <Icon size={18} className={active ? "text-white" : "text-gray-400"} />
                 {label}
               </Link>
             );
           })}
-          
+
           <div className="pt-4 pb-2 flex flex-col gap-3 border-t border-white/10 mt-4">
             {isAuthenticated ? (
               <>

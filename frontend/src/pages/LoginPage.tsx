@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [localError, setLocalError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewState, setViewState] = useState<ViewState>('login');
-  
+
   // Forgot Password States
   const [resetEmail, setResetEmail] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
@@ -55,7 +55,7 @@ export default function LoginPage() {
       setLocalError('Mohon masukkan alamat email Anda.');
       return;
     }
-    
+
     setIsSubmitting(true);
     // Simulate API Call for Reset Password
     setTimeout(() => {
@@ -66,31 +66,29 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex relative bg-slate-950">
-      
+
       {/* Left Side: Premium Hero Image (Desktop Only) */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Abstract Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-900/80 z-10"></div>
-        
+
         {/* Background Image: Logistics/Export Theme */}
-        <img 
-          src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop" 
-          alt="Nusantara Ekspor Logistics" 
+        <img
+          src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop"
+          alt="Nusantara Ekspor Logistics"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        
+
         {/* Content on Image */}
         <div className="relative z-20 flex flex-col justify-center px-16 xl:px-24">
           <Link to="/" className="inline-flex items-center gap-3 mb-10">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <span className="text-white font-bold text-2xl">N</span>
-            </div>
+            <img src="/logo.png" alt="Nusra Ekspor" className="h-14 w-auto object-contain" />
             <div className="flex flex-col text-left">
-              <span className="text-2xl font-bold font-display text-white">Nusantara</span>
-              <span className="text-xs font-medium text-blue-400 -mt-1 tracking-widest uppercase">Ekspor</span>
+              <span className="text-2xl font-bold font-display text-white">Nusra</span>
+              <span className="text-xs font-medium text-amber-500 -mt-1 tracking-widest uppercase">Ekspor</span>
             </div>
           </Link>
-          
+
           <h1 className="text-4xl xl:text-5xl font-bold font-display text-white leading-tight mb-6">
             Jembatan Menuju <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
@@ -100,7 +98,7 @@ export default function LoginPage() {
           <p className="text-lg text-gray-300 max-w-md leading-relaxed">
             Platform B2B terpercaya yang mempertemukan produk kebanggaan UMKM Indonesia dengan pembeli potensial dari seluruh dunia.
           </p>
-          
+
           {/* Stats/Badges */}
           <div className="flex items-center gap-6 mt-12">
             <div className="flex items-center gap-3">
@@ -131,16 +129,14 @@ export default function LoginPage() {
         </div>
 
         <div className="w-full max-w-md relative z-10">
-          
+
           {/* Mobile Logo */}
           <div className="text-center mb-10 lg:hidden">
-             <Link to="/" className="inline-flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-xl">N</span>
-              </div>
+            <Link to="/" className="inline-flex items-center gap-3 mb-2">
+              <img src="/logo.png" alt="Nusra Ekspor" className="h-12 w-auto object-contain" />
               <div className="flex flex-col text-left">
-                <span className="text-xl font-bold font-display text-white">Nusantara</span>
-                <span className="text-[10px] font-medium text-blue-400 -mt-1 tracking-widest uppercase">Ekspor</span>
+                <span className="text-xl font-bold font-display text-white">Nusra</span>
+                <span className="text-[10px] font-medium text-amber-500 -mt-1 tracking-widest uppercase">Ekspor</span>
               </div>
             </Link>
           </div>
@@ -157,7 +153,7 @@ export default function LoginPage() {
                 <span className="text-red-300 text-sm leading-relaxed">{localError}</span>
               </div>
             )}
-            {location.state && !localError && viewState === 'login' &&(
+            {location.state && !localError && viewState === 'login' && (
               <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-3 animate-fade-in">
                 <AlertCircle size={20} className="text-amber-400 flex-shrink-0 mt-0.5" />
                 <span className="text-amber-300 text-sm leading-relaxed">Silakan login terlebih dahulu untuk mengakses halaman tersebut.</span>
@@ -191,17 +187,17 @@ export default function LoginPage() {
 
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                       <label className="block text-sm font-medium text-gray-300">Password</label>
-                       <button 
-                         type="button" 
-                         onClick={() => {
-                           setViewState('forgot_password');
-                           setLocalError('');
-                         }}
-                         className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
-                       >
-                         Lupa password?
-                       </button>
+                      <label className="block text-sm font-medium text-gray-300">Password</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setViewState('forgot_password');
+                          setLocalError('');
+                        }}
+                        className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        Lupa password?
+                      </button>
                     </div>
                     <div className="relative group">
                       <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 transition-colors group-focus-within:text-blue-400" />
@@ -244,7 +240,7 @@ export default function LoginPage() {
                 </form>
 
                 <div className="mt-8 pt-6 border-t border-white/10 text-center">
-                  <span className="text-gray-400 text-sm">Belum bermitra dengan Nusantara? </span>
+                  <span className="text-gray-400 text-sm">Belum bermitra dengan Nusra? </span>
                   <Link to="/register" className="text-white text-sm font-semibold hover:text-blue-400 transition-colors underline decoration-white/30 hover:decoration-blue-400/50 underline-offset-4">
                     Daftar Sekarang
                   </Link>
@@ -255,18 +251,18 @@ export default function LoginPage() {
             {/* --------------------- FORGOT PASSWORD VIEW --------------------- */}
             {viewState === 'forgot_password' && (
               <div className="animate-fade-in">
-                 <button 
-                   onClick={() => {
-                     setViewState('login');
-                     setLocalError('');
-                     setResetSuccess(false);
-                   }}
-                   className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-6 group"
-                 >
-                   <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Kembali ke Login
-                 </button>
+                <button
+                  onClick={() => {
+                    setViewState('login');
+                    setLocalError('');
+                    setResetSuccess(false);
+                  }}
+                  className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-6 group"
+                >
+                  <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Kembali ke Login
+                </button>
 
-                 <div className="mb-8">
+                <div className="mb-8">
                   <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 tracking-tight">Atur Ulang Sandi</h2>
                   <p className="text-gray-400 text-sm">
                     Masukkan email terdaftar Anda dan kami akan mengirimkan tautan untuk mengatur ulang kata sandi.

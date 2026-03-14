@@ -114,7 +114,7 @@ export default function LandingPage() {
                 {' '}Mendunia
               </h1>
               <p className="text-lg lg:text-xl text-gray-400 leading-relaxed mb-8 max-w-lg">
-                Platform canggih bertenaga AI untuk membantu UMKM Indonesia melakukan ekspor ke pasar global. 
+                Platform canggih bertenaga AI untuk membantu UMKM Indonesia melakukan ekspor ke pasar global.
                 Tanpa kendala bahasa, tanpa bingung regulasi.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -284,8 +284,8 @@ export default function LandingPage() {
                   Bersama <span className="gradient-text">Memajukan</span> Ekspor Indonesia
                 </h2>
                 <p className="text-gray-400 leading-relaxed mb-6">
-                  Nusantara Ekspor berkomitmen menjadi jembatan digital bagi pengusaha dan UMKM Indonesia 
-                  untuk menembus pasar internasional. Dengan teknologi AI dan antarmuka yang intuitif, 
+                  Nusra Ekspor berkomitmen menjadi jembatan digital bagi pengusaha dan UMKM Indonesia
+                  untuk menembus pasar internasional. Dengan teknologi AI dan antarmuka yang intuitif,
                   siapapun bisa mulai mengekspor produknya.
                 </p>
                 <Link to="/register" className="btn-accent flex items-center gap-2 w-fit">
@@ -319,7 +319,7 @@ export default function LandingPage() {
             Siap <span className="gradient-text">Memulai Ekspor</span>?
           </h2>
           <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
-            Daftarkan produk UMKM Anda sekarang dan mulai jual ke 50+ negara di seluruh dunia. 
+            Daftarkan produk UMKM Anda sekarang dan mulai jual ke 50+ negara di seluruh dunia.
             Gratis untuk memulai!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

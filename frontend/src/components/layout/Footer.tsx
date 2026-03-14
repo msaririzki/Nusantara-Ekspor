@@ -13,12 +13,16 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">N</span>
-              </div>
+              <img src="/logo.png" alt="Nusra Ekspor" className="h-10 w-auto object-contain" />
               <div className="flex flex-col">
-                <span className="text-lg font-bold font-display text-white">Nusantara</span>
-                <span className="text-[10px] font-medium text-blue-400 -mt-1 tracking-widest uppercase">Ekspor</span>
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold font-display text-white tracking-tight group-hover:text-blue-400 transition-colors duration-300">
+                    Nusra
+                  </span>
+                  <span className="text-[10px] font-medium text-emerald-400 -mt-1 tracking-widest uppercase">
+                    Ekspor
+                  </span>
+                </div>
               </div>
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed mb-4">
@@ -92,7 +96,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-white/5 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-gray-500 text-xs">
-            © 2025 Nusantara Ekspor. All rights reserved. 🇮🇩
+            © 2025 Nusra Ekspor. All rights reserved. 🇮🇩
           </p>
           <p className="text-gray-600 text-xs">
             Dibangun dengan ❤️ untuk UMKM Indonesia oleh GenBI

@@ -39,7 +39,7 @@ export default function ProductDetailPage() {
         umkm_id: product!.userId,
         product_id: product!.id
       }, token);
-      
+
       navigate('/chat', { state: { activeRoomId: res.id } });
     } catch (error) {
       console.error(error);
@@ -139,49 +139,49 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-            {/* Product Info */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                {product.rating && (
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        size={16}
-                        className={
-                          i < Math.floor(product.rating!)
-                            ? 'text-amber-400 fill-amber-400'
-                            : 'text-gray-600'
-                        }
-                      />
-                    ))}
-                    <span className="text-amber-400 font-medium ml-1">{product.rating}</span>
-                    <span className="text-gray-500 text-sm">({(product as any).review_count ?? product.reviewCount ?? 0} ulasan)</span>
-                  </div>
-                )}
-              </div>
-
-              <h1 className="text-3xl lg:text-4xl font-bold font-display text-white mb-4">
-                {product.name}
-              </h1>
-
-              <div className="flex items-center gap-2 mb-6">
-                <MapPin size={16} className="text-blue-400" />
-                <span className="text-gray-400">{product.seller || 'Nusantara Ekspor Seller'}</span>
-                <span className="text-gray-600">•</span>
-                <span className="text-gray-400">{(product as any).seller_location ?? product.sellerLocation ?? 'Indonesia'}</span>
-              </div>
-
-              <div className="glass-card p-6 mb-6">
-                <div className="text-sm text-gray-400 mb-1">Harga per unit</div>
-                <div className="text-3xl font-bold text-emerald-400 mb-2">
-                  {formatCurrency(product.price)}
+          {/* Product Info */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              {product.rating && (
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      size={16}
+                      className={
+                        i < Math.floor(product.rating!)
+                          ? 'text-amber-400 fill-amber-400'
+                          : 'text-gray-600'
+                      }
+                    />
+                  ))}
+                  <span className="text-amber-400 font-medium ml-1">{product.rating}</span>
+                  <span className="text-gray-500 text-sm">({(product as any).review_count ?? product.reviewCount ?? 0} ulasan)</span>
                 </div>
-                <div className="text-gray-500 text-sm">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  Minimum order: <span className="text-white font-medium">{(product as any).min_order ?? product.minOrder ?? 1} pcs</span>
-                </div>
+              )}
+            </div>
+
+            <h1 className="text-3xl lg:text-4xl font-bold font-display text-white mb-4">
+              {product.name}
+            </h1>
+
+            <div className="flex items-center gap-2 mb-6">
+              <MapPin size={16} className="text-blue-400" />
+              <span className="text-gray-400">{product.seller || 'Nusra Ekspor Seller'}</span>
+              <span className="text-gray-600">•</span>
+              <span className="text-gray-400">{(product as any).seller_location ?? product.sellerLocation ?? 'Indonesia'}</span>
+            </div>
+
+            <div className="glass-card p-6 mb-6">
+              <div className="text-sm text-gray-400 mb-1">Harga per unit</div>
+              <div className="text-3xl font-bold text-emerald-400 mb-2">
+                {formatCurrency(product.price)}
               </div>
+              <div className="text-gray-500 text-sm">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                Minimum order: <span className="text-white font-medium">{(product as any).min_order ?? product.minOrder ?? 1} pcs</span>
+              </div>
+            </div>
 
             <p className="text-gray-300 leading-relaxed mb-6">{product.description}</p>
 
@@ -222,9 +222,9 @@ export default function ProductDetailPage() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <button 
-                onClick={handleContactSeller} 
-                disabled={isCreatingChat} 
+              <button
+                onClick={handleContactSeller}
+                disabled={isCreatingChat}
                 className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isCreatingChat ? <Loader2 size={18} className="animate-spin" /> : <MessageSquare size={18} />}
