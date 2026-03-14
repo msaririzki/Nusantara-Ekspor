@@ -77,6 +77,12 @@ export const authApi = {
 
   register: (data: RegisterData) =>
     apiFetch<AuthResponse>('/api/auth/register', { method: 'POST', body: data }),
+
+  forgotPassword: (email: string) =>
+    apiFetch<{ message: string }>('/api/auth/forgot-password', { method: 'POST', body: { email } }),
+
+  resetPassword: (token: string, new_password: string) =>
+    apiFetch<{ message: string }>('/api/auth/reset-password', { method: 'POST', body: { token, new_password } }),
 };
 
 // ===== AI API =====

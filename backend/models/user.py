@@ -31,6 +31,10 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    
+    # Password Reset
+    reset_password_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    reset_password_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     products = relationship("Product", back_populates="owner", lazy="selectin")

@@ -48,7 +48,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleResetSubmit = (e: React.FormEvent) => {
+  const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
     if (!resetEmail) {
@@ -57,11 +57,17 @@ export default function LoginPage() {
     }
 
     setIsSubmitting(true);
-    // Simulate API Call for Reset Password
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const { authApi } = await import('../services/api');
+      await authApi.forgotPassword(resetEmail);
       setResetSuccess(true);
-    }, 1500);
+    } catch (err: any) {
+      // Walaupun backend mensukseskan respon untuk semua kondisi (prevent enumeration),
+      // kalau ada error server 500 tetap kita tangkap.
+      setLocalError(err.message || 'Gagal mengirim permintaan tautan reset.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

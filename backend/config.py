@@ -29,6 +29,9 @@ class Settings:
     # Gemini AI
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
+    # Resend Mailer
+    RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
+
     # CORS
     CORS_ORIGINS: list[str] = os.getenv(
         "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,https://exportmudah.ikydev.site,http://exportmudah.ikydev.site"
