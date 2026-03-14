@@ -77,7 +77,11 @@ def seed_data():
             price=25000.0,
             currency="IDR",
             category="Agrikultur",
-            images=["https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=600&auto=format&fit=crop"],
+            images=[
+                "https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=600&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1536304929831-ee1ca9d44906?q=80&w=600&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?q=80&w=600&auto=format&fit=crop",
+            ],
             specifications={
                 "Weight": "1kg",
                 "Origin": "Jawa Tengah, Indonesia",
@@ -95,7 +99,11 @@ def seed_data():
             price=120000.0,
             currency="IDR",
             category="Perkebunan",
-            images=["https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=600&auto=format&fit=crop"],
+            images=[
+                "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=600&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?q=80&w=600&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1493857671505-72967e2e2760?q=80&w=600&auto=format&fit=crop",
+            ],
             specifications={
                 "Weight": "1kg",
                 "Variety": "Arabica",
@@ -114,7 +122,11 @@ def seed_data():
             price=15000000.0,
             currency="IDR",
             category="Kehutanan",
-            images=["https://images.unsplash.com/photo-1517409419159-873b22baf7b7?q=80&w=600&auto=format&fit=crop"],
+            images=[
+                "https://images.unsplash.com/photo-1517409419159-873b22baf7b7?q=80&w=600&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1542838775-8f6f10c69a25?q=80&w=600&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=600&auto=format&fit=crop",
+            ],
             specifications={
                 "Grade": "Super AAA",
                 "Origin": "Kalimantan Barat, Indonesia",
