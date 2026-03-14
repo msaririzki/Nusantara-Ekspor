@@ -41,7 +41,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from services.email_service import send_reset_password_email
 from models.user import User
-from utils.security import get_password_hash
+from utils.security import hash_password
 
 @router.post("/forgot-password", status_code=200)
 def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
@@ -104,7 +104,7 @@ def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db))
         raise HTTPException(status_code=400, detail="Token reset kata sandi telah kedaluwarsa.")
 
     # Apply new password
-    hashed_pass = get_password_hash(request.new_password)
+    hashed_pass = hash_password(request.new_password)
     user.hashed_password = hashed_pass
     
     # Clear the token
