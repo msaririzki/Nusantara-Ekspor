@@ -80,11 +80,9 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">N</span>
-            </div>
+            <img src="/logo.png" alt="Nusra Ekspor" className="h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
             <div className="flex flex-col text-left">
-              <span className="text-xl font-bold font-display text-white">Nusantara</span>
+              <span className="text-xl font-bold font-display text-white">Nusra</span>
               <span className="text-[10px] font-medium text-blue-400 -mt-1 tracking-widest uppercase">Ekspor</span>
             </div>
           </Link>
@@ -111,11 +109,10 @@ export default function RegisterPage() {
                 key={value}
                 type="button"
                 onClick={() => update('role', value)}
-                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  formData.role === value
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${formData.role === value
                     ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                     : 'text-gray-400 hover:text-white'
-                }`}
+                  }`}
               >
                 {label}
               </button>
