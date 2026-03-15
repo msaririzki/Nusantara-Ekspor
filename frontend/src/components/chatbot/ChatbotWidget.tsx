@@ -82,7 +82,7 @@ export default function ChatbotWidget() {
         {/* Tooltip */}
         <div className="absolute bottom-full right-0 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
           <div className="bg-slate-800 text-white text-xs px-3 py-2 rounded-lg border border-white/10 whitespace-nowrap shadow-xl">
-            💬 Tanya Asisten Ekspor (Gemini AI)
+            ✨ Tanya Asisten Ekspor
           </div>
         </div>
       </button>
@@ -106,7 +106,7 @@ export default function ChatbotWidget() {
               Asisten Ekspor
               <Sparkles size={14} className="text-amber-300" />
             </div>
-            <div className="text-white/70 text-xs">Powered by Gemini AI</div>
+            <div className="text-white/70 text-xs">Asisten Ekspor Nusra</div>
           </div>
         </div>
         <div className="flex items-center gap-1">

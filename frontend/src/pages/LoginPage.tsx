@@ -147,10 +147,30 @@ export default function LoginPage() {
             </Link>
           </div>
 
+          {/* Tombol kembali mobile */}
+          <Link
+            to="/"
+            className="inline-flex lg:hidden items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors group mb-4"
+          >
+            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+            Kembali ke Beranda
+          </Link>
+
           {/* Form Container */}
           <div className="glass-card p-8 sm:p-10 border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-2xl relative overflow-hidden transition-all duration-500 rounded-3xl">
             {/* Top decorative gradient line */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 opacity-80"></div>
+
+            {/* Tombol kembali desktop — pojok kiri atas card */}
+            <div className="hidden lg:flex mb-5">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-white transition-all group"
+              >
+                <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
+                <span className="group-hover:text-blue-400 transition-colors">Kembali ke Beranda</span>
+              </Link>
+            </div>
 
             {/* ERROR NOTICES */}
             {localError && (

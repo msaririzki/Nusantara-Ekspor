@@ -30,7 +30,7 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500">Powered by</span>
-              <span className="badge-blue text-[10px]">Gemini AI</span>
+              <span className="badge-blue text-[10px]">AI Terjemahan</span>
             </div>
           </div>
 

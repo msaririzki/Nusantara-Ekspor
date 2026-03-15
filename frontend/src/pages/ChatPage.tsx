@@ -14,7 +14,7 @@ function TranslateBadge() {
   return (
     <div className="flex items-center gap-1 mt-2 text-[10px] text-purple-400">
       <Zap size={10} />
-      <span>Auto-translated by Gemini</span>
+      <span>Diterjemahkan otomatis</span>
       <span className="text-purple-500">✨</span>
     </div>
   );
@@ -345,7 +345,7 @@ export default function ChatPage() {
         <div className="px-4 py-2 bg-purple-500/10 border-b border-purple-500/20 flex items-center justify-center gap-2">
           <Zap size={14} className="text-purple-400" />
           <span className="text-purple-300 text-xs font-medium">
-            Auto-translation aktif — Pesan otomatis diterjemahkan oleh Gemini AI
+            Terjemahan otomatis aktif — Pesan terkirim dalam bahasa penerima
           </span>
           <span className="text-purple-400">✨</span>
         </div>

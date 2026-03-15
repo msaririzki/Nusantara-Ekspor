@@ -163,6 +163,17 @@
   .animate-delay-500 {
     animation-delay: 500ms;
   }
+
+  /* Custom transparent whites not in Tailwind default palette */
+  .bg-white\/8 {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+  .hover\:bg-white\/8:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+  .border-white\/8 {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
 }
 
 /* ===== Globe 3D Animations ===== */

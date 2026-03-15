@@ -131,7 +131,7 @@ function LiveChatInteractive() {
         <div className="h-px flex-1 bg-gradient-to-r from-transparent to-emerald-500/30" />
         <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
           <Sparkles size={12} className="text-emerald-400" />
-          <span className="text-emerald-300 text-[10px] font-bold tracking-wider">GEMINI AI</span>
+          <span className="text-emerald-300 text-[10px] font-bold tracking-wider">TERJEMAHAN OTOMATIS</span>
         </div>
         <div className="h-px flex-1 bg-gradient-to-l from-transparent to-emerald-500/30" />
       </div>
@@ -243,7 +243,7 @@ export default function FeaturesShowcase() {
             icon={MessageSquare}
             title="Live Chat B2B"
             subtitle="💬 Auto-Translate AI"
-            description="Negosiasi tanpa kendala bahasa! Chat real-time dengan teknologi Gemini AI yang otomatis menerjemahkan antara bahasa apapun."
+            description="Negosiasi tanpa kendala bahasa! Chat real-time dengan terjemahan otomatis yang menerjemahkan antara bahasa apapun secara instan."
             accentColor="emerald"
             glowColor="bg-emerald-500"
             isActive={activeCard === 1}
@@ -256,7 +256,7 @@ export default function FeaturesShowcase() {
             icon={Bot}
             title="Chatbot Asisten"
             subtitle="🤖 Ekspor 24/7"
-            description="Asisten pintar bertenaga Gemini AI yang siap menjawab pertanyaan seputar alur ekspor, regulasi, dokumen, dan izin kapan saja."
+            description="Asisten virtual cerdas yang siap menjawab pertanyaan seputar alur ekspor, regulasi, dokumen, dan izin kapan saja — 24 jam nonstop."
             accentColor="blue"
             glowColor="bg-blue-500"
             isActive={activeCard === 2}

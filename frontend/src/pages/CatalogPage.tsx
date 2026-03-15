@@ -276,6 +276,11 @@ function ProductImageCarousel({ images, name }: { images: string[], name: string
           key={img}
           src={img}
           alt={`${name} - ${i + 1}`}
+          onError={(e) => {
+            const target = e.currentTarget;
+            target.onerror = null; // cegah loop
+            target.src = `https://placehold.co/800x600/1e293b/475569?text=${encodeURIComponent(name.substring(0, 20))}`;
+          }}
           className={`absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-all duration-1000 ease-in-out ${
             i === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
           }`}

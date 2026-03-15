@@ -178,7 +178,7 @@ export default function LandingPage() {
                       I'm interested in your batik collection
                       <div className="flex items-center gap-1 mt-1.5 text-[10px] text-gray-400">
                         <Zap size={10} className="text-purple-400" />
-                        Auto-translated by Gemini
+                        Diterjemahkan otomatis
                       </div>
                     </div>
                     <div className="chat-bubble-sent text-xs ml-auto">

@@ -5,10 +5,24 @@
 # ==========================================
 # Skrip ini digunakan untuk memperbarui dan 
 # menjalankan aplikasi di Server Produksi (VPS/Cloud).
+#
+# Penggunaan:
+#   bash deploy.sh            → deploy biasa (pertahankan data yang ada)
+#   bash deploy.sh --reseed   → deploy + HAPUS & ISI ULANG database
 
 set -e # Hentikan eksekusi jika ada error di tengah jalan
 
+RESEED=false
+for arg in "$@"; do
+  if [ "$arg" = "--reseed" ]; then
+    RESEED=true
+  fi
+done
+
 echo -e "\n🚀 Memulai Proses Deployment Nusantara Ekspor..."
+if [ "$RESEED" = true ]; then
+  echo "⚠️  Mode --reseed aktif: Database akan DIKOSONGKAN dan diisi ulang!"
+fi
 
 # 1. Cek Ketersediaan Docker
 if ! command -v docker &> /dev/null; then
@@ -26,7 +40,7 @@ if [ ! -f backend/.env ]; then
     if [ -f backend/.env.example ]; then
         echo "   Menyalin dari backend/.env.example..."
         cp backend/.env.example backend/.env
-        echo "   TIDAK BISA DILANJUTKAN: Mohon edit 'backend/.env' (isi variabel rahasia seperti Database, Jemini, & Resend API Key)."
+        echo "   TIDAK BISA DILANJUTKAN: Mohon edit 'backend/.env' (isi variabel rahasia seperti Database, Gemini, & Resend API Key)."
         exit 1
     else
         echo "   Template .env.example juga tidak ada. Silakan buat 'backend/.env' manual."
@@ -34,46 +48,62 @@ if [ ! -f backend/.env ]; then
     fi
 fi
 
-# 3.5 Menggunakan database bawaan Github jika fresh install
+# 4. Pastikan folder data ada
 mkdir -p backend/data
-if [ ! -f backend/data/db.sqlite ] && [ -f backend/db.sqlite ]; then
-    echo "📂 Menginisialisasi data volume dengan database bawaan Git..."
-    cp backend/db.sqlite backend/data/db.sqlite
-fi
 
-# 4. Membangun ulang dan me-restart container secara efisien
-echo "🏗️ Memperbarui aplikasi menggunakan Docker Cache..."
+# 5. Bangun ulang dan restart container
+echo "🏗️  Memperbarui aplikasi menggunakan Docker Cache..."
 docker compose up --build -d
 
-# 8. Menambahkan migrasi database baru (jika tidak ter-cover di entrypoint / skrip setup)
-echo "🗃️ Menerapkan migrasi database terkini (kolom reset password)..."
-# Menggunakan docker exec untuk menjalankan script penambahan kolom
-docker compose exec app python -c "
-import sqlite3
-def fix_db():
-    try:
-        conn = sqlite3.connect('data/db.sqlite')
-        cursor = conn.cursor()
-        cursor.execute('ALTER TABLE users ADD COLUMN reset_password_token VARCHAR(255);')
-        cursor.execute('ALTER TABLE users ADD COLUMN reset_password_expires DATETIME;')
-        conn.commit()
-        print('   ✅ Kolom Reset Password berhasil ditambahkan ke Database Server.')
-    except Exception as e:
-        print('   ℹ️ Pengecekan skema database aman:', e)
-        pass
-    finally:
-        if 'conn' in locals(): conn.close()
-fix_db()
-" || echo "   Peringatan: Skrip pemeriksaan database gagal, mungkin container belum siap sepenuhnya."
+# Tunggu app siap
+echo "⏳ Menunggu container siap..."
+sleep 5
 
+# 6. Migrasi skema: tambahkan kolom yang mungkin belum ada
+echo "🗃️  Memeriksa dan memperbarui skema database..."
+docker compose exec -T app python -c "
+import sqlite3, os
+db_path = 'data/db.sqlite'
+if not os.path.exists(db_path):
+    db_path = 'db.sqlite'
+try:
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    for col, coltype in [
+        ('reset_password_token', 'VARCHAR(255)'),
+        ('reset_password_expires', 'DATETIME'),
+    ]:
+        try:
+            cursor.execute(f'ALTER TABLE users ADD COLUMN {col} {coltype};')
+            print(f'   V Kolom {col} ditambahkan.')
+        except Exception:
+            print(f'   i Kolom {col} sudah ada.')
+    conn.commit()
+    conn.close()
+except Exception as e:
+    print(f'   ! Skema check: {e}')
+" || echo "   Peringatan: Pemeriksaan skema gagal, mungkin container belum siap."
+
+# 7. RESEED — Kosongkan & isi ulang database (hanya jika --reseed)
+if [ "$RESEED" = true ]; then
+    echo ""
+    echo "🌱 Menjalankan reseed database..."
+    echo "   (Data lama akan dihapus, diganti data realistis baru)"
+    docker compose exec -T app sh -c "cd /app/backend && python seed.py"
+    echo "✅ Reseed selesai!"
+fi
 
 echo -e "\n🎉 Deployment Selesai!"
-echo "📡 Aplikasi berjalan di port lokal 8002 melalui Nginx."
-echo "   Kabar baik: Port 8002 terpantau AMAN di daftar port VPS Anda."
-echo "   Pastikan Cloudflare Tunnel Anda hanya perlu mengarah ke SATU target:"
-echo "   👉 http://localhost:8002 (ini sudah melayani web dan juga API backend otomatis)"
-echo "   Tidak perlu membuat tunnel terpisah untuk backend."
+echo "📡 Aplikasi berjalan di port 8002 melalui Nginx."
+echo "   Cloudflare Tunnel arahkan ke: http://localhost:8002"
 echo ""
-echo "📝 Cek log secara realtime dengan perintah:"
+echo "📝 Cek log realtime:"
 echo "   docker compose logs -f"
+
+if [ "$RESEED" = true ]; then
+    echo ""
+    echo "Akun yang tersedia setelah reseed:"
+    echo "   UMKM  : zaryelkemiri@gmail.com    | 111111"
+    echo "   Buyer : ArabianCompany@gmail.com   | 111111"
+fi
 echo "=========================================="
