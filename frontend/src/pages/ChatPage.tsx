@@ -10,6 +10,25 @@ import { useAuth } from '../context/AuthContext';
 import { chatApi } from '../services/api';
 import { getLanguageCodeFromCountry } from '../utils/language';
 
+/** Mapping kode bahasa ISO 639-1 ke nama tampilan */
+function getLanguageName(code: string): string {
+  const map: Record<string, string> = {
+    id: 'Indonesia',
+    en: 'English',
+    ar: 'العربية (Arab)',
+    ja: '日本語 (Jepang)',
+    ms: 'Melayu',
+    zh: '中文 (Mandarin)',
+    ko: '한국어 (Korea)',
+    fr: 'Français',
+    de: 'Deutsch',
+    es: 'Español',
+    hi: 'हिन्दी (Hindi)',
+    tr: 'Türkçe',
+  };
+  return map[code] ?? code.toUpperCase();
+}
+
 function TranslateBadge() {
   return (
     <div className="flex items-center gap-1 mt-2 text-[10px] text-purple-400">
@@ -50,7 +69,7 @@ function MessageBubble({ message, isOwn }: { message: ChatMessage; isOwn: boolea
         {message.isTranslated && !isOwn && (
           <div className="mt-1.5 px-3">
             <p className="text-[11px] text-gray-500 italic">
-              Original ({message.originalLanguage === 'en' ? 'English' : message.originalLanguage === 'zh' ? '中文' : 'Indonesian'}): {message.originalMessage}
+              Original ({getLanguageName(message.originalLanguage || 'id')}): {message.originalMessage}
             </p>
           </div>
         )}
